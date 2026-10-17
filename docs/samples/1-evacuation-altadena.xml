@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Demo sample (not a real alert). SAME code EVI maps to EVACUATE. Expiry is far out so the demo works. -->
+<alert xmlns="urn:oasis:names:tc:emergency:cap:1.2">
+  <identifier>CHIRP-DEMO-0001</identifier>
+  <sender>demo@lacounty-oem.example</sender>
+  <sent>2026-10-17T05:00:00-07:00</sent>
+  <status>Actual</status>
+  <msgType>Alert</msgType>
+  <scope>Public</scope>
+  <info>
+    <language>en-US</language>
+    <category>Fire</category>
+    <event>Evacuation Immediate</event>
+    <urgency>Immediate</urgency>
+    <severity>Extreme</severity>
+    <certainty>Observed</certainty>
+    <eventCode><valueName>SAME</valueName><value>EVI</value></eventCode>
+    <expires>2026-12-31T23:59:00-08:00</expires>
+    <senderName>LA County OEM (demo)</senderName>
+    <headline>Evacuation order: Altadena, Lake Ave corridor</headline>
+    <description>Fire moving south. Leave now. Take medications, documents and pets.</description>
+    <area><areaDesc>Altadena: Lake Ave corridor</areaDesc></area>
+  </info>
+</alert>
