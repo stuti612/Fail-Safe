@@ -68,7 +68,7 @@ Codes are append-only. Never renumber a phrasebook code, because old phones woul
 ## 6. How to run
 
 ```bash
-node server/server.mjs           # help queue + Retell endpoints (:8787; MOCK mode without RETELL_API_KEY)
+CHIRP_SUPERVISOR_TOKEN=… CHIRP_APP_ORIGIN=http://localhost:8000 node server/server.mjs   # help queue + Retell (127.0.0.1:8787; MOCK without RETELL_API_KEY)
 node scripts/genkeys.mjs        # once: creates keys/*.secret and shared/keys.js
 node scripts/selftest.mjs       # sign + audio round-trip check, no browser
 python3 -m http.server 8000     # then open http://localhost:8000

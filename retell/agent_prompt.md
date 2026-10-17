@@ -1,7 +1,7 @@
 # Retell agent: "CHIRP Help Line"
 
 ## Setup (Retell dashboard)
-1. Run the help server where Retell can reach it: `RETELL_API_KEY=… CHIRP_SUPERVISOR_TOKEN=… RETELL_FROM_NUMBER=+1… node server/server.mjs`, then tunnel it (`npx localtunnel --port 8787` or ngrok). Without `RETELL_API_KEY` it runs in MOCK mode: unsigned requests are accepted and callbacks never answer.
+1. Run the help server where Retell can reach it: `RETELL_API_KEY=… CHIRP_SUPERVISOR_TOKEN=… CHIRP_APP_ORIGIN=https://<your pages origin> RETELL_FROM_NUMBER=+1… node server/server.mjs`, then tunnel it (`npx localtunnel --port 8787` or ngrok). It binds 127.0.0.1 only; the tunnel is the only way in. The console asks once for the supervisor token; without a token, the queue/callback/alert-publish routes return 503. Without `RETELL_API_KEY` it runs in MOCK mode: unsigned Retell requests are accepted and callbacks never answer.
 2. Create an agent (single prompt), paste the prompt below, and pick a multilingual voice with language auto-detect if offered.
 3. Add the two **custom functions** below (POST, URL = `<tunnel>/retell/function`). Add the **webhook** URL `<tunnel>/retell/webhook` (events: call_ended, call_analyzed).
 4. Buy or import a number, attach the agent, and put it in `shared/config.js` → `RETELL_PHONE`. Use the same number as `RETELL_FROM_NUMBER` for callbacks.
