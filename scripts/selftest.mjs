@@ -157,6 +157,26 @@ check('ordinary info-only call is not queued', srv.handleRetellWebhook(st, { eve
 check('life-threat words in transcript are queued as life threat', srv.handleRetellWebhook(st, { event: 'call_ended', call: { call_id: 'c4', transcript: 'my father is not breathing' } }).queued && srv.rankedHelp(st)[0].lifeThreat);
 check('report_need with life threat tells agent to send caller to 911', /911/.test(srv.reportNeed(st, { need: 'medical', life_threat: true }).reply));
 check('help cannot be closed without a person\'s name', srv.markHandled(st, `${st.help[0].reqId}:${st.help[0].createdMin}`, '') === false);
+{
+  const s2 = srv.createState();
+  const venue = readFileSync(`${root}keys/coliseum-ops.secret`, 'utf8').trim();
+  const b2 = packBody({ ...alert, type: 5, zone: 10 }); // same msgId, different issuer
+  srv.publishAlert(s2, wire);
+  srv.publishAlert(s2, toWire(b2, sign(b2, venue)));
+  check('same msgId from two issuers keeps both alerts', s2.alerts.length === 2);
+  srv.publishAlert(s2, wire);
+  check('re-publishing the same alert does not duplicate it', s2.alerts.length === 2);
+  const now = Date.now();
+  s2.help = [
+    { reqId: 1, createdMin: Math.floor(now / 60000) - 25 * 60, status: 'open', note: 'old' },
+    { reqId: 2, createdMin: Math.floor(now / 60000) - 120, status: 'handled', handledAt: now - 2 * 3600_000, note: 'Main St', from: '+1213', lat: 34.1, lon: -118.1 },
+    { reqId: 3, createdMin: Math.floor(now / 60000), status: 'open', note: 'keep', from: '+1310' },
+  ];
+  srv.pruneHelp(s2, now);
+  check('help older than 24 h is dropped', !s2.help.some((h) => h.reqId === 1));
+  check('handled help loses note/number/location after 1 h', s2.help.find((h) => h.reqId === 2).note === '' && s2.help.find((h) => h.reqId === 2).from === null);
+  check('open help keeps its details', s2.help.find((h) => h.reqId === 3).from === '+1310');
+}
 const sigBody = '{"event":"call_ended"}', ts = String(Date.now());
 const { createHmac } = await import('node:crypto');
 const goodSig = `v=${ts},d=${createHmac('sha256', 'k').update(sigBody + ts).digest('hex')}`;

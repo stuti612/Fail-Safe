@@ -7,16 +7,25 @@
 //   POST /retell/function       Retell custom functions: get_active_alerts, report_need
 //   POST /retell/webhook        Retell call events
 import { createServer } from 'node:http';
-import { readFileSync, writeFileSync, renameSync } from 'node:fs';
-import { createState, publishAlert, activeAlertsText, reportNeed, handleRetellWebhook, markHandled, rankedHelp, verifyRetell } from './core.mjs';
+import { readFileSync, writeFileSync, renameSync, existsSync } from 'node:fs';
+import { createState, publishAlert, activeAlertsText, reportNeed, handleRetellWebhook, markHandled, rankedHelp, verifyRetell, pruneHelp } from './core.mjs';
 
+// ponytail: local demo server. Plain-JSON queue file, no auth on /help. Do not
+// expose beyond the demo tunnel until it has auth + encrypted storage.
 const PORT = Number(process.env.PORT) || 8787;
 const KEY = process.env.RETELL_API_KEY || '';
 const FILE = new URL('./queue.json', import.meta.url);
 const state = createState();
-try { Object.assign(state, JSON.parse(readFileSync(FILE, 'utf8'))); } catch {}
+if (existsSync(FILE)) {
+  // A corrupt queue must stop the server, not be silently replaced with an empty one.
+  try { Object.assign(state, JSON.parse(readFileSync(FILE, 'utf8'))); } catch (err) {
+    console.error(`server/queue.json is unreadable (${err.message}). Fix or move it; refusing to start so no help requests are lost.`);
+    process.exit(1);
+  }
+}
 // Help requests must survive a restart: write-then-rename on every change.
-const save = () => { writeFileSync(`${FILE.pathname}.tmp`, JSON.stringify(state)); renameSync(`${FILE.pathname}.tmp`, FILE); };
+const save = () => { pruneHelp(state); writeFileSync(`${FILE.pathname}.tmp`, JSON.stringify(state)); renameSync(`${FILE.pathname}.tmp`, FILE); };
+setInterval(() => { pruneHelp(state); save(); }, 10 * 60_000).unref();
 
 const send = (res, code, body) => {
   res.writeHead(code, { 'Content-Type': typeof body === 'string' ? 'text/plain; charset=utf-8' : 'application/json', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type' });

@@ -36,8 +36,9 @@ export function publishAlert(state, wire) {
   if (!sender) throw new Error('unsigned or untrusted alert refused');
   const alert = unpackBody(body);
   if (alert.expiresMin <= nowMin()) throw new Error('expired alert refused');
-  state.alerts = state.alerts.filter((a) => a.msgId !== alert.msgId && a.expiresMin > nowMin());
-  state.alerts.push({ ...alert, sender: sender.name });
+  // Same issuer + msgId = same alert (a re-publish); other issuers never collide.
+  state.alerts = state.alerts.filter((a) => !(a.senderId === sender.id && a.msgId === alert.msgId) && a.expiresMin > nowMin());
+  state.alerts.push({ ...alert, senderId: sender.id, sender: sender.name });
   return alert;
 }
 
@@ -98,6 +99,16 @@ export function markHandled(state, key, by) {
   if (!h || !String(by || '').trim()) return false; // a named person must close it
   Object.assign(h, { status: 'handled', handledBy: String(by).slice(0, 80), handledAt: Date.now() });
   return true;
+}
+
+// Caller notes, numbers and locations are kept only while useful: handled
+// requests lose them after 1 h, every request is dropped after 24 h.
+export const RETAIN_MS = { handled: 60 * 60_000, all: 24 * 60 * 60_000 };
+export function pruneHelp(state, now = Date.now()) {
+  state.help = state.help.filter((h) => now - (h.createdMin || 0) * 60000 < RETAIN_MS.all);
+  for (const h of state.help) {
+    if (h.status === 'handled' && now - (h.handledAt || now) > RETAIN_MS.handled) Object.assign(h, { note: '', from: null, lat: null, lon: null });
+  }
 }
 
 export const rankedHelp = (state) => rankHelp(state.help.filter((h) => h.status === 'open')).concat(state.help.filter((h) => h.status !== 'open'));
