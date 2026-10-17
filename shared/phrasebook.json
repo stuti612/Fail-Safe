@@ -59,6 +59,10 @@
     "12": {
       "key": "TEST", "severity": "info", "icon": "🧪",
       "text": { "en": "This is a test. No action needed.", "es": "Esto es una prueba. No se requiere ninguna acción.", "zh": "这是一次测试，无需采取任何行动。", "ko": "테스트입니다. 조치가 필요하지 않습니다.", "tl": "Ito ay isang pagsubok. Walang kailangang gawin.", "vi": "Đây là thử nghiệm. Không cần làm gì.", "ja": "これはテストです。対応は不要です。", "pt": "Isto é um teste. Nenhuma ação necessária.", "ru": "Это проверка. Никаких действий не требуется." }
+    },
+    "13": {
+      "key": "OFFICIAL_ALERT", "severity": "moderate", "icon": "📢",
+      "text": { "en": "Official alert for this area: follow official instructions", "es": "Alerta oficial para esta zona: siga las instrucciones oficiales", "zh": "本地区官方警报：请遵循官方指示", "ko": "이 지역 공식 경보: 공식 지침을 따르세요", "tl": "Opisyal na alerto para sa lugar na ito: sundin ang opisyal na tagubilin", "vi": "Cảnh báo chính thức cho khu vực này: làm theo hướng dẫn chính thức", "ja": "この地域への公式警報：公式の指示に従ってください", "pt": "Alerta oficial para esta área: siga as instruções oficiais", "ru": "Официальное оповещение для этого района: следуйте официальным указаниям" }
     }
   },
   "details": {

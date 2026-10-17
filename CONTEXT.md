@@ -96,6 +96,10 @@ Be honest on Devpost: the base code was written with Claude Code, and we should 
 
 ## 8. Status
 
+**Done (Sat ~4:30 AM, Claude):**
+- CAP/IPAWS import in the console (`console/cap.js`, `shared/cap-map.json`, 3 samples in `docs/samples/`). 18 selftest cases. New phrasebook type 13 OFFICIAL_ALERT (generic fallback).
+- Spoken fallback (`console/speak.js`): after a signed chirp, the console reads the alert aloud in the chosen languages (OS voices, offline where installed). Log shows chirp + speech + total airtime. Not yet measured on real speakers.
+
 **Done (Sat ~2 AM):**
 - Repo scaffold. Wire format, signing and phrasebook (12 alert types, 13 details, 9 languages: en es zh ko tl vi ja pt ru).
 - Self-test passing: sign → audio → decode → verify works, and tampered or random signatures are rejected.
@@ -107,7 +111,7 @@ Be honest on Devpost: the base code was written with Claude Code, and we should 
 ## 9. Next steps (in priority order)
 
 1. **Real-device test:** console on a laptop, receiver on 2 phones (iOS and Android), Wi-Fi off. Measure range.
-2. **Twist 1 build proof: CAP/IPAWS import in the console.** Paste CAP XML → map `<event>`/`<areaDesc>` to codes → sign → chirp. Good candidate to build with IBM Bob. Due about 5:30 AM.
+2. Twist 1 proof clip: CAP sample → chirp → phone shows Spanish. Measure spoken-fallback airtime on the real laptop (which voices exist offline?).
 3. Deploy to GitHub Pages so phones get HTTPS.
 4. Retell agent and number. Put the number in `shared/config.js`.
 5. Native-speaker review of the top 5 codes. Set `reviewed: true` in phrasebook.json.
@@ -117,9 +121,12 @@ Be honest on Devpost: the base code was written with Claude Code, and we should 
 
 ## 10. Twist log
 
-- **Twist 1 (Fri 11:30 PM): identify a federal funding pathway.** Draft response in `docs/TWISTS.md`. The build change is CAP/IPAWS import (not built yet).
+- **Twist 1 (Fri 11:30 PM): identify a federal funding pathway.** Draft response in `docs/TWISTS.md`. Build change: CAP/IPAWS import, built Sat ~4:30 AM (proof checklist in TWISTS.md; clip still to record).
 
 ## 11. Decision log
+
+- **Sat 4:30 AM:** CAP import maps codes only; CAP free text never goes on air. Unknown event → new generic type 13 OFFICIAL_ALERT + operator warning; non-Actual status → TEST; Cancel/expired refused. Zone match is word overlap (`matchZone`), else manual pick.
+- **Sat 4:30 AM:** Spoken fallback uses speechSynthesis with phrasebook text (no AI translation), only after *signed* broadcasts, never after the spoof button.
 
 - **Sat 2 AM:** Plain HTML and ES modules, no build step. Fastest to iterate, works on GitHub Pages, and is easy to cache offline.
 - **Sat 2 AM:** Default protocol is AUDIBLE_FAST (6.8 s). FASTEST is available in the console if range allows.

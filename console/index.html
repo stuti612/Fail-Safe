@@ -19,6 +19,22 @@
     </div>
 
     <div class="card">
+      <label for="cap">Import a CAP / IPAWS alert (paste CAP 1.2 XML)</label>
+      <textarea id="cap" rows="4" placeholder="&lt;alert xmlns=&quot;urn:oasis:names:tc:emergency:cap:1.2&quot;&gt;…"></textarea>
+      <div class="row" style="margin-top:8px">
+        <select id="cap-sample" aria-label="Load a sample CAP file">
+          <option value="">Load a sample…</option>
+          <option>1-evacuation-altadena</option>
+          <option>2-smoke-multi-area</option>
+          <option>3-unknown-event-tsunami</option>
+        </select>
+        <button class="secondary" id="cap-read">Read CAP</button>
+        <button id="cap-send" class="hidden">📣 Sign &amp; broadcast all</button>
+      </div>
+      <div id="cap-out" class="small"></div>
+    </div>
+
+    <div class="card">
       <div class="row">
         <div><label for="type">Alert</label><select id="type"></select></div>
         <div><label for="detail">Instruction</label><select id="detail"></select></div>
@@ -38,6 +54,10 @@
         </div>
         <div><label for="repeats">Repeats</label><input id="repeats" type="number" min="1" max="10" value="3"></div>
         <div><label for="volume">Volume (1–100)</label><input id="volume" type="number" min="1" max="100" value="25"></div>
+      </div>
+      <div class="row">
+        <div><label><input type="checkbox" id="speak" checked style="width:auto"> Speak aloud after each chirp (people without the app)</label></div>
+        <div><label for="speak-langs">Spoken languages, in order</label><input id="speak-langs" value="en es zh ko"></div>
       </div>
       <div class="row" style="margin-top:14px">
         <button id="send">📣 Sign &amp; broadcast</button>

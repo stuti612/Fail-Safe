@@ -6,7 +6,7 @@ Each response says what changed, why, and gives proof. Judges reward changes to 
 
 ## Twist 1 (Fri 11:30 PM): Identify a federal funding pathway
 
-**Status:** pathway drafted. Build change (CAP/IPAWS import) NOT built yet. Due about Sat 5:30 AM.
+**Status:** pathway drafted. CAP/IPAWS import BUILT (Sat ~4:30 AM): console card "Import a CAP / IPAWS alert". Due about Sat 5:30 AM.
 
 ### What changed
 - **Primary funding path:** DHS Science & Technology Directorate, **Silicon Valley Innovation Program (SVIP)**. It funds startups in non-dilutive phases for homeland-security and first-responder technology, and emergency alerting fits squarely.
@@ -20,8 +20,13 @@ Each response says what changed, why, and gives proof. Judges reward changes to 
 Federal funders, and the counties spending federal grants, only buy alerting tools that plug into IPAWS. Without CAP compatibility, CHIRP is a demo. With it, CHIRP extends the national alerting system into places where it can't reach today (dead zones, non-English speakers).
 
 ### Proof
+- [x] Console parses CAP 1.2: `<event>` / SAME `<eventCode>`, `<urgency>`, `<severity>`, `<expires>`, `<area><areaDesc>` → phrasebook codes via `shared/cap-map.json` → best-match zone (else manual pick) → all-language preview → sign → chirp. Code: `console/cap.js`.
+- [x] Safety rules: unknown event → generic OFFICIAL_ALERT code + warning; multiple areas → one alert per zone; expired / Cancel / malformed / oversized → refused; non-Actual status → sent as TEST. CAP free text never goes on air (codes only, still 100 chars).
+- [x] 3 samples in `docs/samples/` (evacuation with SAME code, multi-area smoke with an unmatched area, unknown tsunami event), loadable from the console's "Load a sample" menu.
+- [x] `node scripts/selftest.mjs`: 18 CAP cases pass (missing fields, unknown event, multi-area, expired, malformed, oversized, Cancel, Exercise, mapping codes exist).
+- [x] Browser smoke test (headless Chromium): all 3 samples render, expired refused, no console errors.
 - [ ] Screenshot or clip: a sample CAP XML pasted into the console → chirp → phone shows it in Spanish
-- [ ] Link to the commit
+- [ ] Link to the commit (after push)
 
 ### Verify before submitting
 - [ ] SVIP is accepting applications, and which topic fits

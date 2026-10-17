@@ -54,4 +54,54 @@ for (const proto of ['AUDIBLE_FAST', 'AUDIBLE_FASTEST']) {
   check(`${proto}: ${(audio.length / 48000).toFixed(2)}s of audio decodes back`, heard === wire);
 }
 
+// ---- Trust edge cases ----
+const stranger = globalThis.nacl.sign.keyPair();
+check('alert signed by an unknown key is rejected', verify(body, globalThis.nacl.sign.detached(body, stranger.secretKey)) === null);
+
+// ---- CAP / IPAWS import ----
+const { parseCap, MAX_CAP_CHARS } = await import('../console/cap.js');
+const json = (p) => JSON.parse(readFileSync(`${root}${p}`, 'utf8'));
+const capMap = json('shared/cap-map.json');
+const zones = json('shared/zones.json');
+const book = json('shared/phrasebook.json');
+const opts = { map: capMap, zones, nowMin: nowMinutes() };
+const throws = (fn, re) => { try { fn(); return false; } catch (e) { return re.test(e.message); } };
+const cap = ({ event = 'Evacuation Immediate', expires = '2099-01-01T00:00:00Z', areas = ['Altadena: Lake Ave corridor'], status = 'Actual', extra = '' } = {}) =>
+  `<alert xmlns="urn:oasis:names:tc:emergency:cap:1.2"><status>${status}</status><msgType>Alert</msgType><info>` +
+  (event === null ? '' : `<event>${event}</event>`) + (expires === null ? '' : `<expires>${expires}</expires>`) + extra +
+  areas.map((a) => `<area><areaDesc>${a}</areaDesc></area>`).join('') + '</info></alert>';
+
+const allCodes = [...Object.values(capMap.same), ...capMap.events, capMap.generic, capMap.test];
+check('every CAP mapping points at a real phrasebook code', allCodes.every((c) => book.types[c.type] && book.details[c.detail]));
+
+for (const f of ['1-evacuation-altadena', '2-smoke-multi-area', '3-unknown-event-tsunami']) {
+  const r = parseCap(readFileSync(`${root}docs/samples/${f}.xml`, 'utf8'), opts);
+  check(`sample ${f}: ${r.alerts.length} alert(s), zones ${r.alerts.map((a) => a.zone)}`, r.alerts.length > 0);
+}
+let r = parseCap(cap(), opts);
+check('CAP evacuation -> EVACUATE in Altadena Lake Ave zone', r.alerts.length === 1 && r.alerts[0].type === 1 && r.alerts[0].zone === 1);
+r = parseCap(cap({ event: 'Something Weird', extra: '<eventCode><valueName>SAME</valueName><value>EVI</value></eventCode>' }), opts);
+check('SAME code wins over event text', r.alerts[0].type === 1);
+r = parseCap(cap({ event: 'Volcano Warning' }), opts);
+check('unknown event -> generic code + warning', r.alerts[0].type === capMap.generic.type && r.warnings.some((w) => /Unknown event/.test(w)));
+r = parseCap(cap({ event: null }), opts);
+check('missing <event> -> generic code + warning', r.alerts[0].type === capMap.generic.type && r.warnings.length > 0);
+r = parseCap(cap({ expires: null }), opts);
+check('missing <expires> -> default validity + warning', r.alerts[0].expiresMin === opts.nowMin + 60 && r.warnings.some((w) => /expires/.test(w)));
+r = parseCap(cap({ areas: [] }), opts);
+check('missing <area> -> one alert needing a manual zone', r.alerts.length === 1 && r.alerts[0].zone === null);
+r = parseCap(cap({ areas: ['Pacific Palisades: Sunset Blvd', 'Malibu: Pacific Coast Hwy', 'Malibu PCH', 'Nowhere Town'] }), opts);
+check('multiple areas -> one alert per zone, unmatched kept for manual pick', JSON.stringify(r.alerts.map((a) => a.zone)) === '[3,5,null]');
+r = parseCap(cap({ status: 'Exercise' }), opts);
+check('non-Actual status is sent as TEST', r.alerts[0].type === 12);
+check('expired CAP is refused', throws(() => parseCap(cap({ expires: '2020-01-01T00:00:00Z' }), opts), /expired/));
+check('unreadable <expires> is refused', throws(() => parseCap(cap({ expires: 'soon' }), opts), /Unreadable/));
+check('malformed XML is refused', throws(() => parseCap(cap().replace('</info>', ''), opts), /Malformed/));
+check('non-CAP text is refused', throws(() => parseCap('hello', opts), /no <alert>/));
+check('CAP Cancel is refused', throws(() => parseCap(cap().replace('Alert</msgType>', 'Cancel</msgType>'), opts), /Cancel/));
+check('oversized CAP is refused', throws(() => parseCap(cap({ extra: `<description>${'x'.repeat(MAX_CAP_CHARS)}</description>` }), opts), /too large/));
+r = parseCap(cap({ extra: `<description>${'long text '.repeat(3000)}</description>` }), opts);
+const capBody = packBody({ ...r.alerts[0], msgId: 1 });
+check('long CAP description still yields a 100-char chirp (codes only)', toWire(capBody, sign(capBody, secret)).length === 100);
+
 process.exit(failed ? 1 : 0);

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Demo sample: no SAME code, mapped by event text. Three areas: two match zones, one needs a manual pick. -->
+<alert xmlns="urn:oasis:names:tc:emergency:cap:1.2">
+  <identifier>CHIRP-DEMO-0002</identifier>
+  <sender>demo@lacounty-oem.example</sender>
+  <sent>2026-10-17T05:00:00-07:00</sent>
+  <status>Actual</status>
+  <msgType>Alert</msgType>
+  <scope>Public</scope>
+  <info>
+    <language>en-US</language>
+    <category>Env</category>
+    <event>Smoke Advisory</event>
+    <urgency>Expected</urgency>
+    <severity>Moderate</severity>
+    <certainty>Likely</certainty>
+    <expires>2026-12-31T23:59:00-08:00</expires>
+    <headline>Heavy smoke: stay indoors</headline>
+    <area><areaDesc>Pacific Palisades: Sunset Blvd</areaDesc></area>
+    <area><areaDesc>Malibu: Pacific Coast Hwy</areaDesc></area>
+    <area><areaDesc>Topanga Canyon</areaDesc></area>
+  </info>
+</alert>
