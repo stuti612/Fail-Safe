@@ -1,6 +1,6 @@
 // CHIRP receiver: listens for chirps, verifies them, shows them in the
 // phone's language. Works fully offline once loaded.
-import { initAudio, listen, stopListening, encode, play } from '../shared/audio.js';
+import { initAudio, listen, stopListening, encode, play, durationOf } from '../shared/audio.js';
 import { nowMinutes } from '../shared/payload.js';
 import { loadPhrasebook, languages, pickDefaultLanguage, ui, describe, allZones } from '../shared/phrasebook.js';
 import { RETELL_PHONE, HELP_ENDPOINT, STRICT_DEMO } from '../shared/config.js';
@@ -74,9 +74,6 @@ const onLevel = (level) => {
 $('start').onclick = async () => {
   $('start').disabled = true;
   try {
-    // A tap is the only time iOS lets us create audio, so make the alarm's context now too.
-    toneCtx ??= new (window.AudioContext || window.webkitAudioContext)();
-    toneCtx.resume().catch(() => {});
     if (KIOSK) document.documentElement.requestFullscreen?.().catch(() => {});
     await initAudio();
     await listen(onChirp, onLevel);
@@ -220,32 +217,41 @@ function announce(entry) {
 
 // ---- Tone and flash (verified alerts only) ----
 // Tones stay below ggwave's audible band (~1.9 kHz+) so they don't mask a repeat chirp.
-let toneCtx, alarmStop = null;
-function alarm(loud) {
-  if (!toneCtx) return;
-  alarmStop?.();
-  toneCtx.resume().catch(() => {});
-  const t0 = toneCtx.currentTime + 0.05;
-  const gain = toneCtx.createGain();
-  gain.gain.value = loud ? 0.9 : 0.35;
-  gain.connect(toneCtx.destination);
-  const osc = toneCtx.createOscillator();
-  osc.type = loud ? 'square' : 'sine';
-  const steps = loud ? 16 : 4; // kiosk: ~6 s hi-lo siren; phone: two short beeps
-  const step = loud ? 0.4 : 0.22;
-  for (let i = 0; i < steps; i++) {
-    osc.frequency.setValueAtTime(i % 2 ? 660 : 880, t0 + i * step);
-    if (!loud) gain.gain.setValueAtTime(i % 2 ? 0 : 0.35, t0 + i * step);
+// Played through audio.js's one context: iOS Safari mutes a second AudioContext while the mic is open.
+function tone(freq, seconds, amp, square) {
+  const rate = Math.round(1 / durationOf(new Float32Array(1)));
+  const n = Math.round(rate * seconds);
+  const fade = Math.min(n / 2, Math.round(rate * 0.01)); // 10 ms ramps, no clicks
+  const out = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    const s = Math.sin((2 * Math.PI * freq * i) / rate);
+    out[i] = amp * (square ? Math.sign(s) * 0.8 : s) * Math.min(1, i / fade, (n - 1 - i) / fade);
   }
-  osc.connect(gain);
-  osc.start(t0);
-  osc.stop(t0 + steps * step);
-  const done = () => { alarmStop = null; $('silence').classList.add('hidden'); };
-  osc.onended = done;
-  alarmStop = () => { try { osc.stop(); } catch {} done(); };
-  if (loud) $('silence').classList.remove('hidden');
+  return out;
 }
-$('silence').onclick = () => alarmStop?.();
+
+let alarmRun = 0;
+async function alarm(loud) {
+  if (!listening) return;
+  const run = ++alarmRun; // a newer alarm, or Silence, stops this one
+  // Kiosk: ~6 s hi-lo siren. Phone: two short beeps.
+  const steps = loud
+    ? Array.from({ length: 16 }, (_, i) => [i % 2 ? 660 : 880, 0.4, 0.9])
+    : [[880, 0.22, 0.8], [0, 0.22, 0], [880, 0.22, 0.8]];
+  if (loud) $('silence').classList.remove('hidden');
+  try {
+    await initAudio(); // resumes the context if iOS suspended it
+    for (const [freq, sec, amp] of steps) {
+      if (run !== alarmRun) break;
+      await play(freq ? tone(freq, sec, amp, loud) : new Float32Array(Math.round(sec / durationOf(new Float32Array(1)))));
+    }
+  } catch (err) {
+    console.warn('alarm tone failed', err);
+  } finally {
+    if (run === alarmRun) $('silence').classList.add('hidden');
+  }
+}
+$('silence').onclick = () => { alarmRun++; $('silence').classList.add('hidden'); };
 
 function flash() {
   const f = $('flash');
