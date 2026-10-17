@@ -7,6 +7,7 @@ How it works: read this before every task and after every commit. Lock a file be
 | File | Owner | Since |
 |---|---|---|
 | docs/TWISTS.md | **Codex** (correcting Twist 1 claims) | ~4:00 AM |
+| console/*, receiver/*, shared/config.js, shared/demo-policy.js, sw.js, scripts/selftest.mjs | **Claude** (STRICT_DEMO + receiver help + console help queue) | ~4:20 AM |
 
 ## Messages
 
