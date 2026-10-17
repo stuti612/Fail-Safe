@@ -68,6 +68,7 @@ Codes are append-only. Never renumber a phrasebook code, because old phones woul
 ## 6. How to run
 
 ```bash
+node server/server.mjs           # help queue + Retell endpoints (:8787; MOCK mode without RETELL_API_KEY)
 node scripts/genkeys.mjs        # once: creates keys/*.secret and shared/keys.js
 node scripts/selftest.mjs       # sign + audio round-trip check, no browser
 python3 -m http.server 8000     # then open http://localhost:8000
@@ -97,6 +98,11 @@ Be honest on Devpost: the base code was written with Claude Code, and we should 
 - Shared files (`console/index.html`, `console/app.js`, `sw.js`, `CONTEXT.md`, `scripts/selftest.mjs`): small surgical edits, commit right away.
 
 ## 8. Status
+
+**Done (Sat ~4:45 AM, Claude):**
+- STRICT_DEMO flag (`?strict=1`): Codex's TEST-only scope. The default full mode restores CAP broadcast, the HOLD rung (unsigned = UNVERIFIED, no buzz), the receiver help form → reply chirp + POST, a GPS "another area" check, and the console HELP QUEUE.
+- `shared/help.js` reply-chirp codec (18 B → 24 chars, 1.45 s FASTEST). `shared/receive.js` (dedupe by signer+msgId, expiry, zone distance). `server/` help server + Retell webhook/functions + mock mode.
+- selftest 71/71. Headless e2e passes for both modes. Real-device and real-Retell tests are still pending.
 
 **Done (Sat ~3:45 AM, Claude):**
 - SLOW rung (`console/slow.js`): same alert to same zone blocked for 60 s; wide zones (`"wide": true` in zones.json: Coliseum all gates, new zone 99 LA County countywide) need typed SEND confirm. 6 selftest cases, browser-checked.
