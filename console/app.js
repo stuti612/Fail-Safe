@@ -71,39 +71,85 @@ function nextMsgId() {
   return id;
 }
 
+const languageRows = (alert) =>
+  Object.entries(languages()).filter(([code]) => !STRICT_DEMO || ['en', 'es'].includes(code)).map(([code, info]) => {
+    const d = describe(alert, code);
+    const row = document.createElement('div');
+    row.className = 'history-item';
+    row.textContent = `${info.name}${info.reviewed ? '' : ' (unreviewed)'}: ${d.icon} ${d.title}${d.detail ? '. ' + d.detail : ''}`;
+    return row;
+  });
+
 function renderPreview() {
-  const sample = { type: Number($('type').value), detail: Number($('detail').value), zone: Number($('zone').value) };
-  $('preview').replaceChildren(
-    ...Object.entries(languages()).filter(([code]) => !STRICT_DEMO || ['en', 'es'].includes(code)).map(([code, info]) => {
-      const d = describe(sample, code);
-      const row = document.createElement('div');
-      row.className = 'history-item';
-      row.textContent = `${info.name}${info.reviewed ? '' : ' (unreviewed)'}: ${d.icon} ${d.title}${d.detail ? '. ' + d.detail : ''}`;
-      return row;
-    }),
-  );
+  $('preview').replaceChildren(...languageRows({ type: Number($('type').value), detail: Number($('detail').value), zone: Number($('zone').value) }));
 }
 ['type', 'detail', 'zone'].forEach((id) => $(id).addEventListener('change', renderPreview));
 renderPreview();
+
+// ---- Review: a person approves every alert on a full screen ----
+// Measured airtime of a 100-char signed alert per protocol (scripts/selftest.mjs).
+const CHIRP_SECONDS = { fastest: 3.75, fast: 6.83, normal: 9.9 };
+const GAP_SECONDS = 0.7;
+const SPEECH_SECONDS_EST = 5; // per language; an estimate, not measured
+const MAX_SPOKEN = 3;
+
+const repeatCount = () => Math.min(10, Math.max(1, Number($('repeats').value) || 1));
+const spokenLangs = () => $('speak-langs').value.toLowerCase().split(/[\s,]+/).filter((l) => languages()[l]);
+
+function airtimeText() {
+  const chirp = CHIRP_SECONDS[$('protocol').value] ?? CHIRP_SECONDS.fast;
+  const n = repeatCount();
+  const langs = $('speak').checked ? spokenLangs() : [];
+  const total = n * chirp + (n - 1) * GAP_SECONDS + langs.length * SPEECH_SECONDS_EST;
+  const lines = [`App phones get it in ${chirp.toFixed(1)} s, in every language at once. Full broadcast ≈ ${Math.round(total)} s (chirp × ${n}${langs.length ? `, plus spoken ${langs.join(' ')}` : ''}).`];
+  if (langs.length > MAX_SPOKEN) lines.push(`⚠ ${langs.length} spoken languages: the last one starts ≈ ${Math.round(total - SPEECH_SECONDS_EST)} s in. Keep it to ${MAX_SPOKEN} or fewer.`);
+  return lines;
+}
+
+// Resolves true only if the operator pressed Approve (and typed SEND for a wide zone).
+function review(alert, step) {
+  const d = describe(alert, 'en');
+  const wide = isWide(alert, allZones());
+  const card = document.createElement('div');
+  card.className = `alert ${d.severity}`;
+  for (const [cls, text] of [['title', `${d.icon} ${d.title}`], ['detail', d.detail], ['meta', d.zone]]) {
+    if (text) card.appendChild(Object.assign(document.createElement('div'), { className: cls, textContent: text }));
+  }
+  const until = new Date(alert.expiresMin * 60000).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  $('review-step').textContent = step;
+  $('review-alert').replaceChildren(card);
+  $('review-meta').textContent = `Valid until ${until} · signed as ${agency ? agency.name : 'an UNTRUSTED key (phones will show UNVERIFIED)'}`;
+  const [time, warn] = airtimeText();
+  $('review-time').replaceChildren(time, ...(warn ? [Object.assign(document.createElement('div'), { className: 'review-warn', textContent: warn })] : []));
+  $('review-langs').replaceChildren(...languageRows(alert));
+  const confirm = $('review-confirm');
+  confirm.value = '';
+  $('review-wide').classList.toggle('hidden', !wide);
+  $('review-approve').disabled = wide;
+  confirm.oninput = () => { $('review-approve').disabled = confirm.value.trim().toUpperCase() !== 'SEND'; };
+  const dlg = $('review');
+  dlg.returnValue = '';
+  dlg.showModal();
+  (wide ? confirm : $('review-cancel')).focus();
+  return new Promise((resolve) => dlg.addEventListener('close', () => resolve(dlg.returnValue === 'approve'), { once: true }));
+}
 
 // ---- Broadcast ----
 let busy = false;
 
 $('send').onclick = () => signAndBroadcast(currentAlert());
 
-async function signAndBroadcast(alert) {
+async function signAndBroadcast(alert, step = '') {
   const secret = $('secret').value.trim();
   const stop = (msg) => { $('status').textContent = msg; return false; };
   if (!secret) return stop('Load a signing key first.');
+  if (busy) return stop('A broadcast is already playing.');
   if (STRICT_DEMO && !acceptsDemo(alert, agency, nowMinutes())) return stop('Strict mode: only the signed TEST venue scenario can be broadcast.');
   const sentAt = store.get('chirp.console.sentAt', {});
   const wait = waitSeconds(alert, sentAt, Date.now());
   if (wait) return stop(`SLOW: this alert just went to this zone. Wait ${wait} s before repeating it.`);
-  if (isWide(alert, allZones())) {
-    const d = describe(alert, 'en');
-    const typed = prompt(`WIDE-AREA ALERT\n"${d.title}" to everyone in ${d.zone}.\nType SEND to confirm.`);
-    if (typed?.trim().toUpperCase() !== 'SEND') return stop('Wide-area alert not confirmed. Nothing sent.');
-  }
+  if (!(await review(alert, step))) return stop(isWide(alert, allZones()) ? 'Wide-area alert not confirmed. Nothing sent.' : 'Cancelled. Nothing sent.');
+  if (alert.expiresMin <= nowMinutes()) return stop('The alert expired while in review. Nothing sent.');
   const body = packBody(alert);
   const wire = toWire(body, sign(body, secret));
   // Cooldown starts only once the chirp actually played.
@@ -179,7 +225,8 @@ $('cap-send').onclick = async () => {
   if (capAlerts.some((a) => a.zone === null)) return ($('status').textContent = 'Pick a zone for every CAP area first.');
   if (capAlerts.some((a) => a.expiresMin <= nowMinutes())) return ($('status').textContent = 'CAP alert has expired. Not sent.');
   for (const [i, a] of capAlerts.entries()) {
-    if (!(await signAndBroadcast({ type: a.type, detail: a.detail, zone: a.zone, expiresMin: a.expiresMin, msgId: nextMsgId() }))) {
+    const step = `CAP area ${i + 1} of ${capAlerts.length}: "${a.areaDesc || 'no area'}"`;
+    if (!(await signAndBroadcast({ type: a.type, detail: a.detail, zone: a.zone, expiresMin: a.expiresMin, msgId: nextMsgId() }, step))) {
       $('status').textContent += ` · CAP batch stopped at area ${i + 1} of ${capAlerts.length}; later areas NOT sent.`;
       return;
     }
@@ -197,23 +244,32 @@ async function broadcast(alert, wire, senderLabel, speak) {
     await initAudio();
     const samples = encode(wire, $('protocol').value, Number($('volume').value) || 25);
     const seconds = durationOf(samples);
-    const repeats = Math.min(10, Math.max(1, Number($('repeats').value) || 1));
+    const repeats = repeatCount();
     const airtime = logRow(alert, senderLabel, `${seconds.toFixed(1)} s × ${repeats}`);
     const t0 = performance.now();
+    // Interleave speech with the chirps (chirp, lang 1, chirp, lang 2, ...) so no
+    // language waits behind every repeat; leftover languages follow the last chirp.
+    const langs = speak ? spokenLangs() : [];
+    const speech = { seconds: 0, spoken: [], skipped: [], failed: [] };
+    const say = async (lang) => {
+      $('status').textContent = `Speaking: ${lang}`;
+      const s = await speakAlert(alert, [lang]);
+      speech.seconds += s.seconds;
+      for (const k of ['spoken', 'skipped', 'failed']) speech[k].push(...s[k]);
+    };
     for (let i = 1; i <= repeats; i++) {
       $('status').textContent = `Playing ${i}/${repeats} · ${wire.length} chars · ${seconds.toFixed(1)} s each`;
       await play(samples);
       played++;
-      if (i < repeats) await new Promise((r) => setTimeout(r, 700));
+      if (langs[i - 1]) await say(langs[i - 1]);
+      else if (i < repeats) await new Promise((r) => setTimeout(r, GAP_SECONDS * 1000));
     }
+    for (const lang of langs.slice(repeats)) await say(lang);
     let done = `Done · ${wire.length} chars · ${seconds.toFixed(1)} s per chirp`;
     if (speak) {
-      const langs = $('speak-langs').value.toLowerCase().split(/[\s,]+/).filter((l) => languages()[l]);
-      $('status').textContent = `Speaking: ${langs.join(', ')}`;
-      const s = await speakAlert(alert, langs);
-      airtime.textContent += ` + speech ${s.seconds.toFixed(1)} s (${s.spoken.join(' ') || 'none'})`;
-      if (s.skipped.length) done += ` · no on-device voice for: ${s.skipped.join(', ')}`;
-      if (s.failed.length) done += ` · speech failed for: ${s.failed.join(', ')}`;
+      airtime.textContent += ` + speech ${speech.seconds.toFixed(1)} s (${speech.spoken.join(' ') || 'none'})`;
+      if (speech.skipped.length) done += ` · no on-device voice for: ${speech.skipped.join(', ')}`;
+      if (speech.failed.length) done += ` · speech failed for: ${speech.failed.join(', ')}`;
     }
     airtime.textContent += ` = ${((performance.now() - t0) / 1000).toFixed(1)} s total`;
     $('status').textContent = done;

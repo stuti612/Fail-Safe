@@ -101,6 +101,12 @@ Be honest on Devpost: the base code was written with Claude Code, and we should 
 
 ## 8. Status
 
+**Sat ~2:45 PM (Dev 1): console on a phone.**
+- Every signed broadcast (compose and each CAP area) now opens a **full-screen review**: the alert card, every language, validity, signer, and airtime before Approve (app phones get it in 6.8 s; full broadcast ≈ N s). Big Approve and Cancel buttons. A wide zone needs SEND typed in the review (replaces `prompt()`). Over 3 spoken languages shows a warning. The spoof button skips the review (attack demo).
+- Speech is **interleaved** with the repeats (chirp, lang 1, chirp, lang 2), so no language waits behind every repeat. Default spoken languages are `en es`.
+- Phone layout (≤600 px): stacked fields, 48 px buttons, tables scroll sideways. All styles in `console/index.html`; `shared/style.css` untouched.
+- Checked in headless Chrome at 390×844: cancel sends nothing, wide zone stays locked until SEND, Approve plays, CAP sample 1 goes through the review. selftest 84/84, sw-cache-safety and demo-policy PASS. sw `chirp-v13`. **Not yet tried on a real phone + Bluetooth speaker.**
+
 **Sat 1:50 PM (Dev 1):**
 - `agents-claude-codex` merged into `merge-agents` → **PR #2 to main** (awaiting merge). Gates on the merge: selftest 84/84, server-safety 8/8, sw-cache-safety, test-demo-policy all PASS.
 - **Demo keys regenerated** (old secrets were not in the repo). `shared/keys.js` updated, sw `chirp-v12`. Secrets live only on Dev 1's laptop in `keys/`. Any chirp signed with older keys now shows UNVERIFIED.
@@ -220,3 +226,4 @@ Be honest on Devpost: the base code was written with Claude Code, and we should 
 | b8d997b | C | CONTEXT: status snapshot at push |
 | b18c0b2 | X | HANDOFF: browser mic evidence confirmed independently |
 | (PR #2) | C | Merge agents-claude-codex → main; regenerated demo public keys, sw chirp-v12; demo audio script + tampered/expired WAVs |
+| (feature/vindhya) | C | Console on a phone: full-screen review + Approve before every broadcast, airtime before Approve, speech interleaved with chirps; sw chirp-v13 |
