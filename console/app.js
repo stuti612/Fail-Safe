@@ -3,10 +3,12 @@ import { initAudio, encode, play, durationOf } from '../shared/audio.js';
 import { packBody, toWire, nowMinutes, SIG_LEN } from '../shared/payload.js';
 import { sign, publicKeyFromSecret, findTrustedKey } from '../shared/trust.js';
 import { loadPhrasebook, languages, describe, types, details, allZones } from '../shared/phrasebook.js';
+import { STRICT_DEMO } from '../shared/config.js';
+import { DEMO, acceptsDemo } from '../shared/demo-policy.js';
 import { parseCap } from './cap.js';
 import { speakAlert } from './speak.js';
 import { waitSeconds, isWide, slowKey } from './slow.js';
-import { DEMO, acceptsDemo } from '../shared/demo-policy.js';
+import { startHelpQueue, publishToServer } from './helpqueue.js';
 
 const $ = (id) => document.getElementById(id);
 const store = {
@@ -16,11 +18,18 @@ const store = {
 
 await loadPhrasebook();
 
-$('type').add(new Option(`${types()[DEMO.type].icon} ${types()[DEMO.type].text.en}`, DEMO.type));
-$('detail').add(new Option(details()[DEMO.detail].text.en, DEMO.detail));
-$('zone').add(new Option(allZones()[DEMO.zone].name, DEMO.zone));
+const pick = (all, only) => Object.entries(all).filter(([code]) => !STRICT_DEMO || Number(code) === only);
+for (const [code, t] of pick(types(), DEMO.type)) $('type').add(new Option(`${t.icon} ${t.text.en}`, code));
+for (const [code, d] of pick(details(), DEMO.detail)) $('detail').add(new Option(d.text.en || '(none)', code));
+for (const [id, z] of pick(allZones(), DEMO.zone)) $('zone').add(new Option(z.name, id));
+if (STRICT_DEMO) {
+  $('strict-banner').classList.remove('hidden');
+  $('valid').value = 1;
+  $('speak-langs').value = 'en es';
+  $('valid').disabled = $('speak-langs').disabled = true;
+}
 
-// ---- Signing key ----
+// ---- Signing key (never persisted) ----
 let agency = null;
 try { localStorage.removeItem('chirp.console.secret'); } catch {}
 $('secret').oninput = checkKey;
@@ -28,14 +37,15 @@ function checkKey() {
   const secret = $('secret').value.trim();
   agency = null;
   if (!secret) {
-    $('key-status').textContent = 'Paste the local venue TEST key to send a signed test.';
+    $('key-status').textContent = 'No key loaded: you can only play spoofed chirps.';
     return;
   }
   try {
     agency = findTrustedKey(publicKeyFromSecret(secret));
-    $('key-status').textContent = agency?.id === DEMO.signerId
-      ? `✔ TEST signer: ${agency.name}`
-      : '✖ This is not the venue TEST key. Broadcasting is blocked.';
+    if (STRICT_DEMO && agency?.id !== DEMO.signerId) $('key-status').textContent = '✖ Strict mode needs the venue TEST key. Broadcasting is blocked.';
+    else $('key-status').textContent = agency
+      ? `✔ Signing as ${agency.name}`
+      : '⚠ Valid key, but phones do not trust it. Their alerts will show as UNVERIFIED.';
   } catch {
     $('key-status').textContent = '✖ That is not a valid signing key.';
   }
@@ -48,7 +58,7 @@ function currentAlert() {
     type: Number($('type').value),
     detail: Number($('detail').value),
     zone: Number($('zone').value),
-    expiresMin: nowMinutes() + 1,
+    expiresMin: nowMinutes() + (STRICT_DEMO ? 1 : Math.max(1, Number($('valid').value) || 60)),
     msgId: nextMsgId(),
   };
 }
@@ -63,7 +73,7 @@ function nextMsgId() {
 function renderPreview() {
   const sample = { type: Number($('type').value), detail: Number($('detail').value), zone: Number($('zone').value) };
   $('preview').replaceChildren(
-    ...Object.entries(languages()).filter(([code]) => ['en', 'es'].includes(code)).map(([code, info]) => {
+    ...Object.entries(languages()).filter(([code]) => !STRICT_DEMO || ['en', 'es'].includes(code)).map(([code, info]) => {
       const d = describe(sample, code);
       const row = document.createElement('div');
       row.className = 'history-item';
@@ -80,10 +90,10 @@ let busy = false;
 
 $('send').onclick = () => signAndBroadcast(currentAlert());
 
-function signAndBroadcast(alert) {
+async function signAndBroadcast(alert) {
   const secret = $('secret').value.trim();
-  if (!secret || agency?.id !== DEMO.signerId) return ($('status').textContent = 'Load the local venue TEST key first.');
-  if (!acceptsDemo(alert, agency, nowMinutes())) return ($('status').textContent = 'Blocked: only the signed TEST venue scenario can be broadcast.');
+  if (!secret) return ($('status').textContent = 'Load a signing key first.');
+  if (STRICT_DEMO && !acceptsDemo(alert, agency, nowMinutes())) return ($('status').textContent = 'Strict mode: only the signed TEST venue scenario can be broadcast.');
   const sentAt = store.get('chirp.console.sentAt', {});
   const wait = waitSeconds(alert, sentAt, Date.now());
   if (wait) return ($('status').textContent = `SLOW: this alert just went to this zone. Wait ${wait} s before repeating it.`);
@@ -92,9 +102,13 @@ function signAndBroadcast(alert) {
     const typed = prompt(`WIDE-AREA ALERT\n"${d.title}" to everyone in ${d.zone}.\nType SEND to confirm.`);
     if (typed?.trim().toUpperCase() !== 'SEND') return ($('status').textContent = 'Wide-area alert not confirmed. Nothing sent.');
   }
-  store.set('chirp.console.sentAt', { ...sentAt, [slowKey(alert)]: Date.now() });
   const body = packBody(alert);
-  return broadcast(alert, toWire(body, sign(body, secret)), agency ? agency.name : 'Untrusted key', $('speak').checked);
+  const wire = toWire(body, sign(body, secret));
+  // Cooldown starts only once the chirp actually played.
+  if (await broadcast(alert, wire, agency ? agency.name : 'Untrusted key', $('speak').checked)) {
+    store.set('chirp.console.sentAt', { ...store.get('chirp.console.sentAt', {}), [slowKey(alert)]: Date.now() });
+    if (agency) publishToServer(wire);
+  }
 }
 
 $('spoof').onclick = () => {
@@ -104,6 +118,7 @@ $('spoof').onclick = () => {
 };
 
 // ---- CAP / IPAWS import: CAP XML -> codes + zone -> preview -> sign -> chirp ----
+// Strict mode: preview only.
 const capMap = await fetch('../shared/cap-map.json').then((r) => r.json());
 let capAlerts = [];
 
@@ -141,19 +156,32 @@ $('cap-read').onclick = () => {
   } catch (err) {
     out.replaceChildren(line(`✖ ${err.message}`));
   }
-  $('cap-send').classList.add('hidden');
+  $('cap-send').classList.toggle('hidden', STRICT_DEMO || !capAlerts.length);
 };
 
-// CAP is read-only context in this unauthorized hackathon demo.
+// Puts a CAP-derived alert in the compose form so the all-language preview shows it.
 function load(a) {
-  const d = describe(a, 'en');
-  $('status').textContent = `CAP preview only: ${d.title} · ${d.zone}. Live alert broadcasting is disabled.`;
+  if (STRICT_DEMO) {
+    const d = describe(a, 'en');
+    return ($('status').textContent = `Strict mode, CAP preview only: ${d.title} · ${d.zone}.`);
+  }
+  $('type').value = a.type;
+  $('detail').value = a.detail;
+  if (a.zone !== null) $('zone').value = a.zone;
+  $('valid').value = a.expiresMin - nowMinutes();
+  renderPreview();
 }
 
-$('cap-send').onclick = () => { $('status').textContent = 'CAP broadcasts are disabled in this TEST build.'; };
+$('cap-send').onclick = async () => {
+  if (STRICT_DEMO) return;
+  if (capAlerts.some((a) => a.zone === null)) return ($('status').textContent = 'Pick a zone for every CAP area first.');
+  if (capAlerts.some((a) => a.expiresMin <= nowMinutes())) return ($('status').textContent = 'CAP alert has expired. Not sent.');
+  for (const a of capAlerts) await signAndBroadcast({ type: a.type, detail: a.detail, zone: a.zone, expiresMin: a.expiresMin, msgId: nextMsgId() });
+};
 
+// Resolves true only if every repeat played.
 async function broadcast(alert, wire, senderLabel, speak) {
-  if (busy) return;
+  if (busy) return false;
   busy = true;
   $('send').disabled = $('spoof').disabled = true;
   try {
@@ -174,12 +202,15 @@ async function broadcast(alert, wire, senderLabel, speak) {
       $('status').textContent = `Speaking: ${langs.join(', ')}`;
       const s = await speakAlert(alert, langs);
       airtime.textContent += ` + speech ${s.seconds.toFixed(1)} s (${s.spoken.join(' ') || 'none'})`;
-      if (s.skipped.length) done += ` · no voice installed for: ${s.skipped.join(', ')}`;
+      if (s.skipped.length) done += ` · no on-device voice for: ${s.skipped.join(', ')}`;
+      if (s.failed.length) done += ` · speech failed for: ${s.failed.join(', ')}`;
     }
     airtime.textContent += ` = ${((performance.now() - t0) / 1000).toFixed(1)} s total`;
     $('status').textContent = done;
+    return true;
   } catch (err) {
     $('status').textContent = `Error: ${err.message}`;
+    return false;
   } finally {
     busy = false;
     $('send').disabled = $('spoof').disabled = false;
@@ -197,3 +228,5 @@ function logRow(alert, sender, airtime) {
   $('log').prepend(tr);
   return tr.lastChild;
 }
+
+startHelpQueue({ listEl: $('help-list'), statusEl: $('help-count'), listenBtn: $('help-listen'), store });

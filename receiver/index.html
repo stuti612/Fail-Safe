@@ -18,7 +18,8 @@
       </div>
       <select id="lang" aria-label="Language" style="flex:0 0 160px"></select>
     </div>
-    <p class="card">TEST ONLY · Simulated venue message. No agency or venue has authorized this app for real directions. Ask on-site staff.<br>SOLO PRUEBA · Mensaje simulado. Ninguna autoridad ha autorizado esta app para dar instrucciones reales. Consulte al personal del lugar. Traducción sin revisión profesional.</p>
+    <p class="card small">Hackathon prototype with demo keys; translations are machine-drafted and unreviewed. Always follow official instructions and on-site staff.</p>
+    <p class="card hidden" id="strict-banner">TEST ONLY · Simulated venue message. No agency or venue has authorized this app for real directions. Ask on-site staff.<br>SOLO PRUEBA · Mensaje simulado. Ninguna autoridad ha autorizado esta app para dar instrucciones reales. Consulte al personal del lugar. Traducción sin revisión profesional.</p>
 
     <div class="card">
       <button class="big" id="start"></button>
@@ -30,10 +31,20 @@
 
     <div id="current"></div>
 
-    <div id="actions" class="hidden">
+    <div id="actions">
       <div class="row">
         <button class="danger" id="help"></button>
         <a id="call" class="hidden"><button class="secondary" style="width:100%"></button></a>
+      </div>
+      <div id="help-form" class="card hidden">
+        <div class="row">
+          <div><label for="need" id="need-label"></label><select id="need"></select></div>
+          <div><label for="people" id="people-label"></label><input id="people" type="number" min="1" max="255" value="1"></div>
+        </div>
+        <label><input type="checkbox" id="life" style="width:auto"> <span id="life-label"></span></label>
+        <label><input type="checkbox" id="vuln" style="width:auto"> <span id="vuln-label"></span></label>
+        <p class="hidden" id="call911" style="font-weight:700"></p>
+        <button class="danger" id="help-send" style="margin-top:10px"></button>
       </div>
       <p class="muted small" id="help-status"></p>
     </div>

@@ -1,14 +1,14 @@
 {
-  "1": { "name": "Altadena: Lake Ave corridor", "area": "Altadena" },
-  "2": { "name": "Altadena: Altadena Dr", "area": "Altadena" },
-  "3": { "name": "Pacific Palisades: Sunset Blvd", "area": "Pacific Palisades" },
-  "4": { "name": "Pacific Palisades: Palisades Dr", "area": "Pacific Palisades" },
-  "5": { "name": "Malibu: Pacific Coast Hwy", "area": "Malibu" },
-  "10": { "name": "LA Memorial Coliseum: Gate C", "area": "Exposition Park" },
-  "11": { "name": "LA Memorial Coliseum: all gates", "area": "Exposition Park", "wide": true },
-  "12": { "name": "SoFi Stadium: North entry", "area": "Inglewood" },
-  "20": { "name": "Metro 7th St/Metro Center platform", "area": "Downtown LA" },
-  "21": { "name": "Union Station", "area": "Downtown LA" },
-  "30": { "name": "USC: Ronald Tutor Hall", "area": "University Park" },
-  "99": { "name": "LA County: countywide", "area": "Los Angeles County", "wide": true }
+  "1": {"name": "Altadena: Lake Ave corridor", "area": "Altadena", "lat": 34.1897, "lon": -118.1312, "radiusKm": 1.5},
+  "2": {"name": "Altadena: Altadena Dr", "area": "Altadena", "lat": 34.1855, "lon": -118.148, "radiusKm": 1.5},
+  "3": {"name": "Pacific Palisades: Sunset Blvd", "area": "Pacific Palisades", "lat": 34.0459, "lon": -118.526, "radiusKm": 2},
+  "4": {"name": "Pacific Palisades: Palisades Dr", "area": "Pacific Palisades", "lat": 34.0606, "lon": -118.5394, "radiusKm": 2},
+  "5": {"name": "Malibu: Pacific Coast Hwy", "area": "Malibu", "lat": 34.036, "lon": -118.6919, "radiusKm": 5},
+  "10": {"name": "LA Memorial Coliseum: Gate C", "area": "Exposition Park", "lat": 34.0141, "lon": -118.2879, "radiusKm": 0.5},
+  "11": {"name": "LA Memorial Coliseum: all gates", "area": "Exposition Park", "wide": true, "lat": 34.0141, "lon": -118.2879, "radiusKm": 1},
+  "12": {"name": "SoFi Stadium: North entry", "area": "Inglewood", "lat": 33.955, "lon": -118.339, "radiusKm": 0.5},
+  "20": {"name": "Metro 7th St/Metro Center platform", "area": "Downtown LA", "lat": 34.0487, "lon": -118.2588, "radiusKm": 0.3},
+  "21": {"name": "Union Station", "area": "Downtown LA", "lat": 34.0562, "lon": -118.2365, "radiusKm": 0.4},
+  "30": {"name": "USC: Ronald Tutor Hall", "area": "University Park", "lat": 34.0203, "lon": -118.2898, "radiusKm": 0.3},
+  "99": {"name": "LA County: countywide", "area": "Los Angeles County", "wide": true, "lat": 34.05, "lon": -118.25, "radiusKm": 80}
 }

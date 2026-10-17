@@ -93,7 +93,7 @@ check('missing <area> -> one alert needing a manual zone', r.alerts.length === 1
 r = parseCap(cap({ areas: ['Pacific Palisades: Sunset Blvd', 'Malibu: Pacific Coast Hwy', 'Malibu PCH', 'Nowhere Town'] }), opts);
 check('multiple areas -> one alert per zone, unmatched kept for manual pick', JSON.stringify(r.alerts.map((a) => a.zone)) === '[3,5,null]');
 r = parseCap(cap({ status: 'Exercise' }), opts);
-check('non-Actual status is sent as TEST', r.alerts[0].type === 12);
+check('non-Actual status maps to TEST preview', r.alerts[0].type === 12);
 check('expired CAP is refused', throws(() => parseCap(cap({ expires: '2020-01-01T00:00:00Z' }), opts), /expired/));
 check('unreadable <expires> is refused', throws(() => parseCap(cap({ expires: 'soon' }), opts), /Unreadable/));
 check('malformed XML is refused', throws(() => parseCap(cap().replace('</info>', ''), opts), /Malformed/));
@@ -162,5 +162,27 @@ const { createHmac } = await import('node:crypto');
 const goodSig = `v=${ts},d=${createHmac('sha256', 'k').update(sigBody + ts).digest('hex')}`;
 check('Retell signature verifies', srv.verifyRetell(sigBody, goodSig, 'k'));
 check('Retell signature rejects tampering / wrong key / stale', !srv.verifyRetell(sigBody + ' ', goodSig, 'k') && !srv.verifyRetell(sigBody, goodSig, 'x') && !srv.verifyRetell(sigBody, goodSig, 'k', Date.now() + 6 * 60_000));
+
+// ---- Receiver decisions (replay / expiry / dedupe / zone) ----
+const { receiveChirp, outsideZone } = await import('../shared/receive.js');
+const seenR = new Set();
+let rc = receiveChirp(wire, nowMinutes(), seenR);
+check('signed alert accepted and verified', rc.status === 'ok' && rc.entry.sender?.id === 'la-county-oem');
+seenR.add(wire); seenR.add(rc.key);
+check('exact repeat is a duplicate', receiveChirp(wire, nowMinutes(), seenR).status === 'dup');
+const sameId = packBody({ ...alert, detail: 5 });
+check('same signer + msgId with new body is a duplicate (replay)', receiveChirp(toWire(sameId, sign(sameId, secret)), nowMinutes(), seenR).status === 'dup');
+const spoofSameId = toWire(sameId, new Uint8Array(64).fill(1));
+const rs = receiveChirp(spoofSameId, nowMinutes(), seenR);
+check('unsigned chirp is shown as unverified, not dropped (HOLD rung)', rs.status === 'ok' && rs.entry.sender === null);
+const oldBody = packBody({ ...alert, msgId: 9, expiresMin: nowMinutes() - 1 });
+check('expired signed alert is dropped', receiveChirp(toWire(oldBody, sign(oldBody, secret)), nowMinutes()).status === 'expired');
+check('malformed chirp is dropped', receiveChirp('not base64 !!', nowMinutes()).status === 'malformed');
+check('wrong-version chirp is dropped', receiveChirp(toWire(Object.assign(packBody(alert), { 0: 9 }), new Uint8Array(64)), nowMinutes()).status === 'malformed');
+const unk = packBody({ ...alert, type: 200, msgId: 10 });
+check('unknown phrasebook code still verifies (shown as "Unknown alert")', receiveChirp(toWire(unk, sign(unk, secret)), nowMinutes()).status === 'ok');
+check('phone 10 km from Altadena zone -> other area', outsideZone(zones[1], { lat: 34.10, lon: -118.13 }) === true);
+check('phone inside Altadena zone -> same area', outsideZone(zones[1], { lat: 34.19, lon: -118.131 }) === false);
+check('no GPS -> no guess', outsideZone(zones[1], null) === null);
 
 process.exit(failed ? 1 : 0);
