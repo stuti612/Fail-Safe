@@ -99,6 +99,13 @@ Be honest on Devpost: the base code was written with Claude Code, and we should 
 
 ## 8. Status
 
+**Snapshot at push (Sat ~4:15 AM):**
+- **Ladder in the build:** WATCH (receiver listens offline) → ASK (help form → reply chirp + POST; Retell `report_need`) → SLOW (60 s repeat cooldown, typed SEND for wide zones, 12 h validity cap) → HOLD (unsigned = UNVERIFIED, never buzzes; STRICT_DEMO) → HAND TO A PERSON (ranked help queue, a named person closes each entry, Retell transfer, callback ladder ending in a door knock).
+- **Gates, all green:** `node scripts/selftest.mjs` 84/84 · `scripts/server-safety.mjs` 7/7 · `scripts/sw-cache-safety.mjs` · `scripts/test-demo-policy.mjs` · `scripts/mic-loopback.mjs` (needs Playwright).
+- **Verified only in software/headless browser.** Not yet tested: speaker → phone acoustics, a real Retell call/number, spoken fallback with real OS voices, GitHub Pages deploy.
+- **In flight (Codex, uncommitted):** receiver buzz rule. A verified alert should buzz unless GPS positively says the phone is outside the zone (currently it needs a GPS fix to buzz at all).
+- Service worker cache: `chirp-v10` (includes `range/`).
+
 **Done (Sat ~4:10 AM, Claude + Codex reviews):**
 - Server hardened against Codex's 7-case gate (`scripts/server-safety.mjs` 7/7): supervisor token, every un-recorded call goes to human review, en+es life words, PII retention 1 h/24 h, refuses a corrupt queue. Outbound callback ladder: call → retry → SMS (no provider: skipped, logged) → door knock; silence/voicemail are never "reached".
 - Validity capped at 12 h on console and receiver (bounds replay). The CAP batch stops on the first failure.
