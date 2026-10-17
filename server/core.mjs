@@ -88,6 +88,10 @@ export function reportNeed(state, args = {}, { source = 'phone', callId = null, 
 export function handleRetellWebhook(state, body) {
   const call = body && typeof body === 'object' ? body.call || {} : {};
   if (body?.event !== 'call_ended' && body?.event !== 'call_analyzed') return { queued: false };
+  if (call.metadata?.helpKey) { // one of our outbound callbacks
+    const h = state.help.find((x) => helpKey(x) === call.metadata.helpKey);
+    return { queued: false, help: body.event === 'call_ended' ? h : null, step: h && body.event === 'call_ended' ? callbackOutcome(h, call) : h?.callback?.step };
+  }
   const transcript = typeof call.transcript === 'string' ? call.transcript : '';
   const words = transcript.match(/\p{L}{2,}/gu) || [];
   const life = LIFE.test(transcript);
@@ -122,3 +126,31 @@ export function pruneHelp(state, now = Date.now()) {
 }
 
 export const rankedHelp = (state) => rankHelp(state.help.filter((h) => h.status === 'open')).concat(state.help.filter((h) => h.status !== 'open'));
+
+// ---- Outbound callback ladder ("what if they don't pick up?") ----
+// call -> retry once -> SMS -> flag for a door knock. No answer, busy, voicemail
+// and silence all count as NOT reached; nothing here ever marks a person "OK".
+// An answered call goes back to a person to review (status stays open).
+export const LADDER = ['call 1', 'call 2', 'sms', 'door knock'];
+const NOT_REACHED = /^(dial_no_answer|dial_busy|dial_failed|voicemail_reached|inactivity|error_no_audio_received|machine_detected)$/;
+
+export function startCallback(h) {
+  if (h.status !== 'open') throw new Error('request is already handled');
+  h.callback = { step: h.from ? 'call 1' : 'door knock', log: [`${new Date().toISOString()} ${h.from ? 'calling' : 'no phone number: door knock needed'}`] };
+  return h.callback.step;
+}
+
+// Outcome of one callback call (from the Retell webhook). Returns the next step.
+export function callbackOutcome(h, { disconnection_reason: reason = '', transcript = '' } = {}) {
+  const cb = h.callback;
+  if (!cb || cb.step === 'answered' || cb.step === 'door knock') return cb?.step;
+  const spoke = (String(transcript).match(/\p{L}{2,}/gu) || []).length >= 3;
+  if (!NOT_REACHED.test(reason) && spoke) {
+    cb.step = 'answered';
+    if (LIFE.test(transcript)) h.lifeThreat = true;
+  } else {
+    cb.step = LADDER[LADDER.indexOf(cb.step) + 1] || 'door knock';
+  }
+  cb.log.push(`${new Date().toISOString()} ${reason || (spoke ? 'answered' : 'silence')} -> ${cb.step}`);
+  return cb.step;
+}

@@ -2,13 +2,14 @@
 //   RETELL_API_KEY=... node server/server.mjs      (no key = MOCK mode, unsigned requests accepted)
 // Endpoints (CORS open, JSON):
 //   GET  /help                  ranked queue (Bearer CHIRP_SUPERVISOR_TOKEN if set)        POST /help        receiver "I need help"
-//   POST /help/handled          {key, by}           GET  /alerts?lang=es   text the phone agent reads
+//   POST /help/handled          {key, by}           POST /help/callback  {key}  call -> retry -> sms -> door knock           GET  /alerts?lang=es   text the phone agent reads
 //   POST /alerts                {wire}  console publishes the signed alert it chirped
 //   POST /retell/function       Retell custom functions: get_active_alerts, report_need
 //   POST /retell/webhook        Retell call events
 import { createServer } from 'node:http';
 import { readFileSync, writeFileSync, renameSync, existsSync } from 'node:fs';
-import { createState, publishAlert, activeAlertsText, reportNeed, handleRetellWebhook, markHandled, rankedHelp, verifyRetell, pruneHelp } from './core.mjs';
+import { createState, publishAlert, activeAlertsText, reportNeed, handleRetellWebhook, markHandled, rankedHelp, verifyRetell, pruneHelp, startCallback, callbackOutcome } from './core.mjs';
+import { helpKey } from '../shared/help.js';
 
 // ponytail: local demo server. Plain-JSON queue file, no auth on /help. Do not
 // expose beyond the demo tunnel until it has auth + encrypted storage.
@@ -17,6 +18,9 @@ const KEY = process.env.RETELL_API_KEY || '';
 // Supervisor routes (read queue, close requests) need this bearer token when set.
 // Residents' POST /help and Retell's routes stay open (Retell is checked by signature).
 const TOKEN = process.env.CHIRP_SUPERVISOR_TOKEN || '';
+// Outbound callbacks need a Retell number; without one, MOCK callbacks never answer (shows the ladder).
+const FROM = process.env.RETELL_FROM_NUMBER || '';
+const RETRY_MS = KEY && FROM ? 60_000 : 3_000;
 const FILE = new URL('./queue.json', import.meta.url);
 const state = createState();
 if (existsSync(FILE)) {
@@ -39,6 +43,31 @@ const send = (res, code, body) => {
 };
 const supervisor = (req) => !TOKEN || req.headers.authorization === `Bearer ${TOKEN}`;
 
+async function runCallback(h) {
+  const step = h.callback?.step;
+  if (step === 'sms') { // ponytail: no SMS provider wired; logged and skipped, never silently treated as reached
+    h.callback.log.push(`${new Date().toISOString()} sms: no provider configured, skipped -> door knock`);
+    h.callback.step = 'door knock';
+    return save();
+  }
+  if (step !== 'call 1' && step !== 'call 2') return save();
+  if (!(KEY && FROM)) {
+    return setTimeout(() => { callbackOutcome(h, { disconnection_reason: 'dial_no_answer' }); runCallback(h); }, RETRY_MS);
+  }
+  try {
+    const r = await fetch('https://api.retellai.com/v2/create-phone-call', {
+      method: 'POST', headers: { Authorization: `Bearer ${KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from_number: FROM, to_number: h.from, metadata: { helpKey: helpKey(h) } }),
+    });
+    if (!r.ok) throw new Error(`Retell ${r.status}`);
+    save(); // outcome arrives on /retell/webhook
+  } catch (err) {
+    callbackOutcome(h, { disconnection_reason: 'dial_failed' });
+    h.callback.log.push(`${new Date().toISOString()} ${err.message}`);
+    setTimeout(() => runCallback(h), RETRY_MS);
+  }
+}
+
 createServer(async (req, res) => {
   // With a token set, never wildcard CORS: echo the caller's origin (the token is the gate).
   origin = TOKEN ? (req.headers.origin || '') : '*';
@@ -52,10 +81,17 @@ createServer(async (req, res) => {
   if (retell && KEY && !verifyRetell(raw, req.headers['x-retell-signature'], KEY)) return send(res, 401, 'bad signature');
   try {
     const route = `${req.method} ${url.pathname}`;
-    if ((route === 'GET /help' || route === 'POST /help/handled') && !supervisor(req)) return send(res, 401, 'supervisor token required');
+    if (['GET /help', 'POST /help/handled', 'POST /help/callback'].includes(route) && !supervisor(req)) return send(res, 401, 'supervisor token required');
     if (route === 'GET /help') return send(res, 200, rankedHelp(state));
     if (route === 'POST /help') { const r = reportNeed(state, body, { source: 'app' }); save(); return send(res, 200, r); }
     if (route === 'POST /help/handled') return markHandled(state, body.key, body.by) ? (save(), send(res, 200, { ok: true })) : send(res, 400, 'need key and a person\'s name');
+    if (route === 'POST /help/callback') {
+      const h = state.help.find((x) => helpKey(x) === body.key);
+      if (!h) return send(res, 404, 'no such request');
+      const step = startCallback(h);
+      runCallback(h);
+      return send(res, 200, { step, mock: !(KEY && FROM) });
+    }
     if (route === 'GET /alerts') return send(res, 200, activeAlertsText(state, url.searchParams.get('lang') || 'en'));
     if (route === 'POST /alerts') { const a = publishAlert(state, String(body.wire || '')); save(); return send(res, 200, a); }
     if (route === 'POST /retell/function') {
@@ -68,7 +104,12 @@ createServer(async (req, res) => {
       }
       return send(res, 404, `unknown function ${body.name}`);
     }
-    if (route === 'POST /retell/webhook') { const r = handleRetellWebhook(state, body); if (r.queued) save(); return send(res, 204, ''); }
+    if (route === 'POST /retell/webhook') {
+      const r = handleRetellWebhook(state, body);
+      if (r.help) setTimeout(() => runCallback(r.help), r.step === 'call 2' ? RETRY_MS : 0);
+      else save();
+      return send(res, 204, '');
+    }
     send(res, 404, 'not found');
   } catch (err) {
     send(res, 400, err.message);

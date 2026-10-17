@@ -179,6 +179,22 @@ check('help cannot be closed without a person\'s name', srv.markHandled(st, help
   check('handled help loses note/number/location after 1 h', s2.help.find((h) => h.reqId === 2).note === '' && s2.help.find((h) => h.reqId === 2).from === null);
   check('open help keeps its details', s2.help.find((h) => h.reqId === 3).from === '+1310');
 }
+{
+  const h = { status: 'open', from: '+12135550100', reqId: 1, createdMin: 1 };
+  srv.startCallback(h);
+  check('callback: no answer -> retry', srv.callbackOutcome(h, { disconnection_reason: 'dial_no_answer' }) === 'call 2');
+  check('callback: answered but silent counts as NOT reached -> sms', srv.callbackOutcome(h, { disconnection_reason: 'user_hangup', transcript: '' }) === 'sms');
+  const v = { status: 'open', from: '+1', reqId: 2, createdMin: 1 };
+  srv.startCallback(v);
+  check('callback: voicemail is never "reached"', srv.callbackOutcome(v, { disconnection_reason: 'voicemail_reached', transcript: 'Hi you have reached Maria leave a message' }) === 'call 2');
+  const a = { status: 'open', from: '+1', reqId: 3, createdMin: 1 };
+  srv.startCallback(a);
+  check('callback: real answer -> back to a person, request stays open', srv.callbackOutcome(a, { disconnection_reason: 'user_hangup', transcript: 'yes we still need help my mother is trapped' }) === 'answered' && a.status === 'open' && a.lifeThreat);
+  check('callback: no phone number -> straight to door knock', srv.startCallback({ status: 'open', reqId: 4, createdMin: 1 }) === 'door knock');
+  const s3 = srv.createState();
+  s3.help.push(h);
+  check('webhook routes our callback outcome by helpKey metadata', srv.handleRetellWebhook(s3, { event: 'call_ended', call: { metadata: { helpKey: helpKey(h) }, disconnection_reason: 'dial_busy' } }).step === 'door knock' || h.callback.step === 'door knock');
+}
 const sigBody = '{"event":"call_ended"}', ts = String(Date.now());
 const { createHmac } = await import('node:crypto');
 const goodSig = `v=${ts},d=${createHmac('sha256', 'k').update(sigBody + ts).digest('hex')}`;
