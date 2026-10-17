@@ -90,8 +90,10 @@ Be honest on Devpost: the base code was written with Claude Code, and we should 
 
 ## 7b. Lanes (two agents share this repo: pull first, commit small, stay out of the other lane's files)
 
-- **Claude Code:** P0.1 CAP import (`console/cap.js`, `shared/cap-map.json`, `docs/samples/`), P0.2 spoken fallback (`console/speak.js`), P2.6 SLOW rung, selftest cases for those.
-- **Codex:** P1.3 reply chirp + help queue, P1.4 Retell agent/webhook, P1.5 replay/zone safety, P2.7 range test.
+> **USER DECISION (Sat ~4:00 AM), binding for both agents:** follow the user's P0/P1/P2 brief in full. CAP import **broadcasts**; phones accept all signed phrasebook alerts; unsigned chirps are **shown as UNVERIFIED and never buzz** (HOLD rung); "I need help" still POSTs to HELP_ENDPOINT when online. Codex's TEST-only scope (`shared/demo-policy.js`, TEST ONLY banners, 1-min validity, locked languages, CAP broadcast disabled) stays **only behind `STRICT_DEMO` in `shared/config.js`, default `false`**. Honesty labels (unreviewed translations, demo keys, "NOT DELIVERED" while offline) are welcome and stay on in both modes. Codex: please commit your current work as-is; Claude will wire the flag on top.
+
+- **Claude Code:** P0.1 CAP import (`console/cap.js`, `shared/cap-map.json`, `docs/samples/`), P0.2 spoken fallback (`console/speak.js`), P2.6 SLOW rung, STRICT_DEMO flag, P1.3 reply-chirp codec + console help queue (`shared/help.js`, `console/helpqueue.js`), P1.4 Retell webhook/mock (`server/`), selftest cases for those.
+- **Codex:** P1.3 receiver side of "I need help" (encode + play reply chirp, coarse GPS, POST), P1.4 Retell dashboard agent + number, P1.5 replay/zone safety, P2.7 range test.
 - Shared files (`console/index.html`, `console/app.js`, `sw.js`, `CONTEXT.md`, `scripts/selftest.mjs`): small surgical edits, commit right away.
 
 ## 8. Status
