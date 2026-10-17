@@ -44,10 +44,10 @@ export function publishAlert(state, wire) {
 
 export function activeAlertsText(state, lang = 'en') {
   const live = state.alerts.filter((a) => a.expiresMin > nowMin());
-  if (!live.length) return 'There are no official CHIRP alerts right now. Do not tell the caller they are safe. If they are in danger, tell them to call 911.';
+  if (!live.length) return 'There are no signed CHIRP alerts right now. Do not tell the caller they are safe. If they are in danger, tell them to call 911.';
   return live.map((a) => {
     const t = book.types[a.type], d = book.details[a.detail];
-    return [`Official alert from ${a.sender} for ${zones[a.zone]?.name || `zone ${a.zone}`}`, say(t?.text, lang), say(d?.text, lang)].filter(Boolean).join('. ');
+    return [`Signed CHIRP demo alert from ${a.sender} for ${zones[a.zone]?.name || `zone ${a.zone}`}`, say(t?.text, lang), say(d?.text, lang)].filter(Boolean).join('. ');
   }).join('\n') + '\nRead these exactly. Do not add instructions that are not here.';
 }
 

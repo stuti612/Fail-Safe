@@ -9,10 +9,16 @@ import { HELP_ENDPOINT } from '../shared/config.js';
 
 const SERVER = HELP_ENDPOINT.replace(/\/help\/?$/, '');
 
-// Lets the phone line (Retell) read out the alert we just chirped. Best effort.
-export function publishToServer(wire) {
-  if (!SERVER) return;
-  fetch(`${SERVER}/alerts`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ wire }) }).catch(() => {});
+// Lets the phone line (Retell) read out the alert we just chirped.
+// Resolves to a short status for the operator: acknowledged, refused, or unreachable.
+export async function publishToServer(wire) {
+  if (!SERVER) return 'phone line: not configured';
+  try {
+    const res = await fetch(`${SERVER}/alerts`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ wire }) });
+    return res.ok ? 'phone line: ✔ acknowledged' : `phone line: ✖ refused (${await res.text()})`;
+  } catch {
+    return 'phone line: ✖ unreachable';
+  }
 }
 
 export function startHelpQueue({ listEl, statusEl, listenBtn, store }) {

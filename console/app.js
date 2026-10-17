@@ -107,7 +107,7 @@ async function signAndBroadcast(alert) {
   // Cooldown starts only once the chirp actually played.
   if (await broadcast(alert, wire, agency ? agency.name : 'Untrusted key', $('speak').checked)) {
     store.set('chirp.console.sentAt', { ...store.get('chirp.console.sentAt', {}), [slowKey(alert)]: Date.now() });
-    if (agency) publishToServer(wire);
+    if (agency) $('status').textContent += ` · ${await publishToServer(wire)}`;
   }
 }
 
