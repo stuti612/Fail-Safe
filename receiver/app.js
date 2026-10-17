@@ -218,14 +218,14 @@ function announce(entry) {
 // ---- Tone and flash (verified alerts only) ----
 // Tones stay below ggwave's audible band (~1.9 kHz+) so they don't mask a repeat chirp.
 // Played through audio.js's one context: iOS Safari mutes a second AudioContext while the mic is open.
-function tone(freq, seconds, amp, square) {
+function tone(freq, seconds, amp) {
   const rate = Math.round(1 / durationOf(new Float32Array(1)));
   const n = Math.round(rate * seconds);
   const fade = Math.min(n / 2, Math.round(rate * 0.01)); // 10 ms ramps, no clicks
   const out = new Float32Array(n);
   for (let i = 0; i < n; i++) {
     const s = Math.sin((2 * Math.PI * freq * i) / rate);
-    out[i] = amp * (square ? Math.sign(s) * 0.8 : s) * Math.min(1, i / fade, (n - 1 - i) / fade);
+    out[i] = amp * s * Math.min(1, i / fade, (n - 1 - i) / fade); // pure sine: no harmonics in the chirp band
   }
   return out;
 }
@@ -234,16 +234,16 @@ let alarmRun = 0;
 async function alarm(loud) {
   if (!listening) return;
   const run = ++alarmRun; // a newer alarm, or Silence, stops this one
-  // Kiosk: ~6 s hi-lo siren. Phone: two short beeps.
-  const steps = loud
-    ? Array.from({ length: 16 }, (_, i) => [i % 2 ? 660 : 880, 0.4, 0.9])
-    : [[880, 0.22, 0.8], [0, 0.22, 0], [880, 0.22, 0.8]];
-  if (loud) $('silence').classList.remove('hidden');
+  // Hi-lo siren at full volume. 1.6/1.2 kHz is where small phone speakers are loudest,
+  // and still below ggwave's band. Phone ~4 s, shelter screen ~8 s; Silence stops either.
+  const beeps = loud ? 20 : 10;
+  const steps = Array.from({ length: beeps }, (_, i) => [i % 2 ? 1200 : 1600, 0.32, 1]).flatMap((s) => [s, [0, 0.08, 0]]);
+  $('silence').classList.remove('hidden');
   try {
     await initAudio(); // resumes the context if iOS suspended it
     for (const [freq, sec, amp] of steps) {
       if (run !== alarmRun) break;
-      await play(freq ? tone(freq, sec, amp, loud) : new Float32Array(Math.round(sec / durationOf(new Float32Array(1)))));
+      await play(freq ? tone(freq, sec, amp) : new Float32Array(Math.round(sec / durationOf(new Float32Array(1)))));
     }
   } catch (err) {
     console.warn('alarm tone failed', err);
