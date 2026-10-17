@@ -114,4 +114,32 @@ check('same alert to another zone is not slowed', waitSeconds({ type: 1, zone: 2
 check('countywide and all-gates zones need a second confirm', isWide({ zone: 99 }, zones) && isWide({ zone: 11 }, zones) && !isWide(a1, zones));
 check('CAP "Los Angeles County" maps to the countywide zone', parseCap(cap({ areas: ['Los Angeles County'] }), opts).alerts[0].zone === 99);
 
+// ---- Reply chirp (offline ASK) + help queue ----
+const { encodeHelp, decodeHelp, rankHelp, enqueueHelp } = await import('../shared/help.js');
+const req = { need: 3, lifeThreat: true, vulnerable: true, people: 4, lang: 'es', msgId: 4242, reqId: 777, lat: 34.19, lon: -118.13, createdMin: 29000000 };
+const helpWire = encodeHelp(req);
+check(`help code is ${helpWire.length} chars`, helpWire.length === 24);
+check('help code round-trips', JSON.stringify(decodeHelp(helpWire)) === JSON.stringify(req));
+check('help without GPS round-trips as null', decodeHelp(encodeHelp({ ...req, lat: null, lon: null })).lat === null);
+check('alert wire is not a help code', decodeHelp(wire) === null);
+check('garbage is not a help code', decodeHelp('!!!') === null && decodeHelp('') === null && decodeHelp('SGVsbG8gd29ybGQhISEhISEh') === null);
+check('help code is not an alert', throws(() => fromWire(helpWire), /length/));
+{
+  const g = gg.init(params);
+  const raw = gg.encode(tx, helpWire, gg.ProtocolId.GGWAVE_PROTOCOL_AUDIBLE_FASTEST, 25);
+  const bytes = new Int8Array(raw.buffer.slice(raw.byteOffset, raw.byteOffset + raw.byteLength));
+  let heard = null;
+  for (let i = 0; i < bytes.length; i += 4096) { const x = gg.decode(g, bytes.slice(i, i + 4096)); if (x && x.length) heard = new TextDecoder().decode(new Uint8Array(x)); }
+  gg.free(g);
+  check(`help chirp decodes through ggwave FASTEST (${(bytes.length / 4 / 48000).toFixed(2)} s)`, decodeHelp(heard)?.reqId === 777);
+}
+const q = [];
+const base = { need: 4, people: 1, lang: 'en', msgId: 0, lat: null, lon: null };
+enqueueHelp(q, { ...base, reqId: 1, createdMin: 100 });                                  // old, ordinary
+enqueueHelp(q, { ...base, reqId: 2, createdMin: 200, vulnerable: true });               // vulnerable
+enqueueHelp(q, { ...base, reqId: 3, createdMin: 300, lifeThreat: true });               // life threat, newest
+enqueueHelp(q, { ...base, reqId: 4, createdMin: 50 });                                  // oldest ordinary
+check('duplicate help request is ignored', enqueueHelp(q, { ...base, reqId: 3, createdMin: 300, lifeThreat: true }) === false && q.length === 4);
+check('help queue: life threat, then vulnerable, then oldest', rankHelp(q).map((r) => r.reqId).join() === '3,2,4,1');
+
 process.exit(failed ? 1 : 0);
