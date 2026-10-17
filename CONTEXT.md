@@ -101,12 +101,25 @@ Be honest on Devpost: the base code was written with Claude Code, and we should 
 
 ## 8. Status
 
-**Sat 2:30 PM (Dev 3, branch `dev3`):**
-- **Help server runs on Dev 3's laptop in MOCK mode**, behind a **cloudflared** quick tunnel (`cloudflared tunnel --url http://localhost:8787`). Not localtunnel or ngrok: their browser warning page breaks the phone's POST /help. The tunnel URL changes on every restart, so update `shared/config.js` and the Retell dashboard each time. Secrets are in `server/.env` (gitignored). Start with `node --env-file=server/.env server/server.mjs`.
-- **Smoke test through the tunnel, 7/7:** Retell get_active_alerts (es) and report_need (life threat → 911 reply), phone POST /help with CORS, GET /help 401 without token / 200 with token, close refused without a name, close as a named person.
-- **Twist 2 build:** Armenian (`hy`) added through `shared/phrasebook.json` only (53 phrases, `reviewed: false`, Eastern Armenian). Headless phone-size browser renders the menu, UI and a signed EVACUATE in Armenian with no errors (`docs/evidence/twist2-armenian-receiver.png`). With fresh keys: selftest 84/84, test-demo-policy PASS, server-safety 8/8. Write-up in `docs/TWISTS.md`. **Needs a sw.js bump (Dev 1)** because phrasebook.json is cached.
-- **Translation review sheets:** `docs/translation-review/<lang>.md`, one per language, for native speakers.
-- **Still to do:** Retell agent, number, API key; set RETELL_PHONE / HELP_ENDPOINT once Pages is live; one real call; help flow end to end on real phones; native-speaker reviews.
+**Sat ~4:15 PM (Dev 3): help line live in Retell.** Branch `dev3`.
+- **Help server** runs on Dev 3's laptop with the Retell API key (**signatures enforced**), behind a cloudflared quick tunnel (`https://exception-tons-operating-scout.trycloudflare.com`). Run in two terminals: `caffeinate -i node --env-file=server/.env server/server.mjs` and `cloudflared tunnel --no-autoupdate --url http://localhost:8787`. Not localtunnel or ngrok (their browser warning page breaks the phone's POST /help). **The tunnel URL changes on every cloudflared restart**: then update the Retell functions and webhook and `shared/config.js`. Secrets are in `server/.env` (gitignored).
+- **Retell agent "CHIRP Help Line"**: single prompt from `retell/agent_prompt.md`, English (US) + Spanish (Latin America), custom functions `get_active_alerts` / `report_need`, Call Transfer (cold) to a teammate's phone, agent webhook. **Browser test calls in English and Spanish work**: the agent looks up alerts and records the need, and it lands in the help queue signed by Retell (`source: phone`, lang `es`). Transfer can't run in browser calls (Retell limit). **No phone number yet** (needs a card); then RETELL_PHONE / RETELL_FROM_NUMBER, a real call and a real transfer.
+- **Twist 2 build:** Armenian through `shared/phrasebook.json` only (commit `5d151e4`). Proof and paste-ready text in `docs/TWISTS.md`. **Needs a sw.js bump (Dev 1).**
+- **Translation review sheets:** `docs/translation-review/<lang>.md`. No language reviewed yet.
+- **Still to do:** set HELP_ENDPOINT in `shared/config.js` (Pages origin in `CHIRP_APP_ORIGIN`); help flow end to end on real phones; clear test entries from `server/queue.json` before the demo.
+
+**Sat ~3:30 PM (Dev 2): receiver, badges, kiosk.** Branch `dev2`.
+- Expired signed chirps now show a grey **Expired** card, no buzz/tone/flash (fixes the demo beat 1:30 gap). Three badges: Demo signature / UNVERIFIED / Expired.
+- Verified alerts: Android vibration + 2-beep tone (660/880 Hz, below the chirp band) + 3-flash screen flash; screen readers announce each new alert once.
+- **Shelter screen `?kiosk=1`** (`&langs=en,es,zh,ko`): huge text, stacked languages, ~6 s siren with Silence, fullscreen, wake lock, mic watchdog.
+- Contrast to WCAG AA for severe/moderate fills (`shared/style.css`); receiver restyled.
+- Checked in desktop Chromium via `?debug=1` paste only. selftest 84/84, demo-policy, sw-cache-safety, server-safety 8/8 PASS. **No real speaker → phone test yet.** sw.js not bumped (network-first, so online reload picks it up; Dev 1 may bump).
+
+**Sat ~2:45 PM (Dev 1): console on a phone.**
+- Every signed broadcast (compose and each CAP area) now opens a **full-screen review**: the alert card, every language, validity, signer, and airtime before Approve (app phones get it in 6.8 s; full broadcast ≈ N s). Big Approve and Cancel buttons. A wide zone needs SEND typed in the review (replaces `prompt()`). Over 3 spoken languages shows a warning. The spoof button skips the review (attack demo).
+- Speech is **interleaved** with the repeats (chirp, lang 1, chirp, lang 2), so no language waits behind every repeat. Default spoken languages are `en es`.
+- Phone layout (≤600 px): stacked fields, 48 px buttons, tables scroll sideways. All styles in `console/index.html`; `shared/style.css` untouched.
+- Checked in headless Chrome at 390×844: cancel sends nothing, wide zone stays locked until SEND, Approve plays, CAP sample 1 goes through the review. selftest 84/84, sw-cache-safety and demo-policy PASS. sw `chirp-v13`. **Not yet tried on a real phone + Bluetooth speaker.**
 
 **Sat 1:50 PM (Dev 1):**
 - `agents-claude-codex` merged into `merge-agents` → **PR #2 to main** (awaiting merge). Gates on the merge: selftest 84/84, server-safety 8/8, sw-cache-safety, test-demo-policy all PASS.
@@ -159,6 +172,7 @@ Be honest on Devpost: the base code was written with Claude Code, and we should 
 
 ## 10. Twist log
 
+- **Twist 2 (Sat 4:30 AM): make it global.** Written response + paste-ready text in `docs/TWISTS.md` (Sat ~3:15 PM). Build proof pending (Dev 3: a language added via `phrasebook.json` only); fill in [LANGUAGE] and the link before submitting. Limit noted: RTL scripts are not handled.
 - **Twist 1 (Fri 11:30 PM): identify a federal funding pathway.** Draft response in `docs/TWISTS.md`. Build change: CAP/IPAWS import, built Sat ~3:40 AM (proof checklist in TWISTS.md; clip still to record).
 
 ## 11. Decision log
@@ -227,3 +241,4 @@ Be honest on Devpost: the base code was written with Claude Code, and we should 
 | b8d997b | C | CONTEXT: status snapshot at push |
 | b18c0b2 | X | HANDOFF: browser mic evidence confirmed independently |
 | (PR #2) | C | Merge agents-claude-codex → main; regenerated demo public keys, sw chirp-v12; demo audio script + tampered/expired WAVs |
+| (feature/vindhya) | C | Console on a phone: full-screen review + Approve before every broadcast, airtime before Approve, speech interleaved with chirps; sw chirp-v13 |
