@@ -101,6 +101,13 @@ Be honest on Devpost: the base code was written with Claude Code, and we should 
 
 ## 8. Status
 
+**Sat 1:50 PM (Dev 1):**
+- `agents-claude-codex` merged into `merge-agents` → **PR #2 to main** (awaiting merge). Gates on the merge: selftest 84/84, server-safety 8/8, sw-cache-safety, test-demo-policy all PASS.
+- **Demo keys regenerated** (old secrets were not in the repo). `shared/keys.js` updated, sw `chirp-v12`. Secrets live only on Dev 1's laptop in `keys/`. Any chirp signed with older keys now shows UNVERIFIED.
+- **Demo audio:** `docs/demo-audio/tampered.wav` (Gate C alert flipped to EVACUATE after signing → UNVERIFIED) and `expired.wav` (valid coliseum-ops signature, expired 1 h before generation). `node scripts/make-demo-audio.mjs` regenerates them; rerun if the keys change.
+- **Gap (Dev 2):** the receiver drops expired chirps silently (`receiver/app.js` onChirp → `ignored expired chirp`), so demo beat 1:30 ("shows Expired") shows nothing yet.
+- GitHub Pages: needs a repo admin (stuti612).
+
 **Snapshot at push (Sat ~4:15 AM):**
 - **Ladder in the build:** WATCH (receiver listens offline) → ASK (help form → reply chirp + POST; Retell `report_need`) → SLOW (60 s repeat cooldown, typed SEND for wide zones, 12 h validity cap) → HOLD (unsigned = UNVERIFIED, never buzzes; STRICT_DEMO) → HAND TO A PERSON (ranked help queue, a named person closes each entry, Retell transfer, callback ladder ending in a door knock).
 - **Gates, all green:** `node scripts/selftest.mjs` 84/84 · `scripts/server-safety.mjs` 7/7 · `scripts/sw-cache-safety.mjs` · `scripts/test-demo-policy.mjs` · `scripts/mic-loopback.mjs` (needs Playwright).
@@ -212,3 +219,4 @@ Be honest on Devpost: the base code was written with Claude Code, and we should 
 | fe74fd5 | X | Buzz fix (quiet only when GPS says outside the zone); DEVICE_TEST records the digital mic check; v11 cache |
 | b8d997b | C | CONTEXT: status snapshot at push |
 | b18c0b2 | X | HANDOFF: browser mic evidence confirmed independently |
+| (PR #2) | C | Merge agents-claude-codex → main; regenerated demo public keys, sw chirp-v12; demo audio script + tampered/expired WAVs |
