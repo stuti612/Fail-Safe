@@ -115,7 +115,7 @@ check('countywide and all-gates zones need a second confirm', isWide({ zone: 99 
 check('CAP "Los Angeles County" maps to the countywide zone', parseCap(cap({ areas: ['Los Angeles County'] }), opts).alerts[0].zone === 99);
 
 // ---- Reply chirp (offline ASK) + help queue ----
-const { encodeHelp, decodeHelp, rankHelp, enqueueHelp } = await import('../shared/help.js');
+const { encodeHelp, decodeHelp, rankHelp, enqueueHelp, helpKey } = await import('../shared/help.js');
 const req = { need: 3, lifeThreat: true, vulnerable: true, people: 4, lang: 'es', msgId: 4242, reqId: 777, lat: 34.19, lon: -118.13, createdMin: 29000000 };
 const helpWire = encodeHelp(req);
 check(`help code is ${helpWire.length} chars`, helpWire.length === 24);
@@ -152,11 +152,13 @@ check('no alerts -> agent never says "safe" is OK', /Do not tell the caller they
 check('webhook with missing transcript queues a callback', srv.handleRetellWebhook(st, { event: 'call_ended', call: { call_id: 'c1' } }).queued === true);
 check('webhook with garbage transcript queues a callback', srv.handleRetellWebhook(st, { event: 'call_ended', call: { call_id: 'c2', transcript: '%%%% ... ##' } }).queued === true);
 check('webhook with null body does not crash', srv.handleRetellWebhook(st, null).queued === false);
-check('same call is not queued twice (call_analyzed after call_ended)', srv.handleRetellWebhook(st, { event: 'call_analyzed', call: { call_id: 'c1' } }).queued === false);
-check('ordinary info-only call is not queued', srv.handleRetellWebhook(st, { event: 'call_ended', call: { call_id: 'c3', transcript: 'Agent: hello. User: what is the alert for Altadena please' } }).queued === false);
+check('same call is not queued twice (call_analyzed after call_ended)', srv.handleRetellWebhook(st, { event: 'call_analyzed', call: { call_id: 'c1' } }).queued === false && st.help.filter((h) => h.callId === 'c1').length === 1);
+check('call with no recorded need goes to human review (never auto-closed)', srv.handleRetellWebhook(st, { event: 'call_ended', call: { call_id: 'c3', transcript: 'Agent: hello. User: what is the alert for Altadena please' } }).queued === true);
+srv.reportNeed(st, { need: 'medical' }, { callId: 'c5' });
+check('call where the agent recorded a need is not queued again', srv.handleRetellWebhook(st, { event: 'call_ended', call: { call_id: 'c5', transcript: 'long enough transcript here' } }).queued === false);
 check('life-threat words in transcript are queued as life threat', srv.handleRetellWebhook(st, { event: 'call_ended', call: { call_id: 'c4', transcript: 'my father is not breathing' } }).queued && srv.rankedHelp(st)[0].lifeThreat);
 check('report_need with life threat tells agent to send caller to 911', /911/.test(srv.reportNeed(st, { need: 'medical', life_threat: true }).reply));
-check('help cannot be closed without a person\'s name', srv.markHandled(st, `${st.help[0].reqId}:${st.help[0].createdMin}`, '') === false);
+check('help cannot be closed without a person\'s name', srv.markHandled(st, helpKey(st.help[0]), '') === false && srv.markHandled(st, helpKey(st.help[0]), 'Ana R.') === true);
 {
   const s2 = srv.createState();
   const venue = readFileSync(`${root}keys/coliseum-ops.secret`, 'utf8').trim();

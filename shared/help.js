@@ -55,7 +55,8 @@ export function decodeHelp(text) {
   };
 }
 
-export const helpKey = (r) => `${r.reqId}:${r.createdMin}`;
+// Same request heard by sound and POSTed by the app merges; a phone report (callId) never merges with one.
+export const helpKey = (r) => `${r.reqId}:${r.createdMin}:${r.callId || ''}`;
 
 // HELP QUEUE order: life threat first, then vulnerability, then oldest request.
 // Missing flags count as false (POST / Retell reports may omit them).

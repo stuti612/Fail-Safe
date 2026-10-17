@@ -8,6 +8,18 @@ import { decodeHelp, enqueueHelp, rankHelp, helpKey, NEEDS } from '../shared/hel
 import { HELP_ENDPOINT } from '../shared/config.js';
 
 const SERVER = HELP_ENDPOINT.replace(/\/help\/?$/, '');
+// Supervisor token (server CHIRP_SUPERVISOR_TOKEN), asked once, kept for this tab only.
+const auth = () => { try { return { Authorization: `Bearer ${sessionStorage.getItem('chirp.token') || ''}` }; } catch { return {}; } };
+async function supervisorFetch(url, opts = {}) {
+  let res = await fetch(url, { ...opts, headers: { ...opts.headers, ...auth() } });
+  if (res.status === 401) {
+    const t = prompt('Supervisor token for the help server:');
+    if (!t) return res;
+    try { sessionStorage.setItem('chirp.token', t.trim()); } catch {}
+    res = await fetch(url, { ...opts, headers: { ...opts.headers, ...auth() } });
+  }
+  return res;
+}
 
 // Lets the phone line (Retell) read out the alert we just chirped.
 // Resolves to a short status for the operator: acknowledged, refused, or unreachable.
@@ -70,7 +82,7 @@ export function startHelpQueue({ listEl, statusEl, listenBtn, store }) {
     Object.assign(q, { status: 'handled', handledBy: by });
     save();
     render();
-    if (SERVER) fetch(`${SERVER}/help/handled`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: helpKey(q), by }) }).catch(() => {});
+    if (SERVER) supervisorFetch(`${SERVER}/help/handled`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: helpKey(q), by }) }).catch(() => {});
   }
 
   listenBtn.onclick = async () => {
@@ -86,7 +98,7 @@ export function startHelpQueue({ listEl, statusEl, listenBtn, store }) {
   };
 
   if (SERVER) {
-    const poll = () => fetch(`${SERVER}/help`).then((r) => r.json()).then((items) => items.forEach((i) => add(i, 'server'))).catch(() => {});
+    const poll = () => supervisorFetch(`${SERVER}/help`).then((r) => (r.ok ? r.json() : [])).then((items) => items.forEach((i) => add(i, 'server'))).catch(() => {});
     poll();
     setInterval(poll, 5000);
   }

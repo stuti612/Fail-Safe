@@ -4,7 +4,7 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
-import { rankHelp, enqueueHelp, NEEDS } from '../shared/help.js';
+import { rankHelp, enqueueHelp, helpKey, NEEDS } from '../shared/help.js';
 
 globalThis.nacl ??= createRequire(import.meta.url)('../vendor/nacl-fast.min.js');
 const { fromWire, unpackBody } = await import('../shared/payload.js');
@@ -51,7 +51,9 @@ export function activeAlertsText(state, lang = 'en') {
   }).join('\n') + '\nRead these exactly. Do not add instructions that are not here.';
 }
 
-const LIFE = /\b(not breathing|can'?t breathe|unconscious|bleeding|chest pain|heart attack|stroke|trapped|fire|drowning|overdose)\b/i;
+// ponytail: keyword flag (en + es) only raises priority; it never lowers or closes anything.
+const LIFE = /\b(not breathing|can'?t breathe|unconscious|bleeding|chest pain|heart attack|stroke|trapped|fire|drowning|overdose|no respira|inconsciente|sangrando|atrapad[oa]|incendio|infarto|ahog\w*)\b/i;
+const bool = (v) => v === true || v === 1 || /^(true|yes|1)$/i.test(String(v ?? ''));
 
 // Retell custom function report_need, or the receiver's POST /help (source 'app').
 export function reportNeed(state, args = {}, { source = 'phone', callId = null, from = null } = {}) {
@@ -59,9 +61,9 @@ export function reportNeed(state, args = {}, { source = 'phone', callId = null, 
   const note = String(args.note || args.location || '').slice(0, 500);
   const req = {
     need: NEEDS[need] ? need : 4,
-    lifeThreat: Boolean(args.life_threat ?? args.lifeThreat) || LIFE.test(note),
-    vulnerable: Boolean(args.vulnerable),
-    people: Math.min(255, Math.max(1, Number(args.people) || 1)),
+    lifeThreat: bool(args.life_threat ?? args.lifeThreat) || LIFE.test(note),
+    vulnerable: bool(args.vulnerable),
+    people: Math.min(255, Math.max(1, Math.floor(Number(args.people)) || 1)),
     lang: /^[a-z]{2}$/.test(args.language || args.lang) ? (args.language || args.lang) : 'en',
     msgId: Number(args.msgId) || 0,
     reqId: Number(args.reqId) || Math.floor(Math.random() * 65536),
@@ -79,23 +81,31 @@ export function reportNeed(state, args = {}, { source = 'phone', callId = null, 
   };
 }
 
-// Retell webhook. A call with no usable transcript is a risk signal, never an "OK".
+// Retell webhook. Deciding that a caller needs nothing is not automated: every
+// call without a recorded report_need goes to a person for review, and a call
+// with no usable transcript is a risk signal, never an "OK". A later event for
+// the same call (call_analyzed after call_ended) updates the same entry.
 export function handleRetellWebhook(state, body) {
   const call = body && typeof body === 'object' ? body.call || {} : {};
   if (body?.event !== 'call_ended' && body?.event !== 'call_analyzed') return { queued: false };
-  if (state.help.some((h) => h.callId && h.callId === call.call_id)) return { queued: false };
   const transcript = typeof call.transcript === 'string' ? call.transcript : '';
   const words = transcript.match(/\p{L}{2,}/gu) || [];
-  if (words.length >= 3 && !LIFE.test(transcript)) return { queued: false };
-  const r = reportNeed(state, {
-    need: 'other', life_threat: LIFE.test(transcript),
-    note: words.length < 3 ? 'Call ended with no usable transcript: call back / send a person.' : transcript.slice(0, 500),
-  }, { source: 'phone', callId: call.call_id || null, from: call.from_number || null });
+  const life = LIFE.test(transcript);
+  const note = words.length < 3 ? 'Call ended with no usable transcript: call back / send a person.' : `Call review (no need recorded by agent): ${transcript.slice(0, 480)}`;
+  const existing = call.call_id && state.help.find((h) => h.callId === call.call_id);
+  if (existing) {
+    if (life) existing.lifeThreat = true;
+    if (existing.reviewOnly && words.length >= 3) existing.note = note;
+    return { queued: false, updated: true };
+  }
+  const r = reportNeed(state, { need: 'other', life_threat: life, note }, { source: 'phone', callId: call.call_id || null, from: call.from_number || null });
+  const h = state.help[state.help.length - 1];
+  if (r.added) h.reviewOnly = true; // created by the webhook, not by the agent
   return { queued: r.added };
 }
 
 export function markHandled(state, key, by) {
-  const h = state.help.find((x) => `${x.reqId}:${x.createdMin}` === key);
+  const h = state.help.find((x) => helpKey(x) === key);
   if (!h || !String(by || '').trim()) return false; // a named person must close it
   Object.assign(h, { status: 'handled', handledBy: String(by).slice(0, 80), handledAt: Date.now() });
   return true;
