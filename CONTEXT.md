@@ -103,8 +103,8 @@ Be honest on Devpost: the base code was written with Claude Code, and we should 
 - **Ladder in the build:** WATCH (receiver listens offline) → ASK (help form → reply chirp + POST; Retell `report_need`) → SLOW (60 s repeat cooldown, typed SEND for wide zones, 12 h validity cap) → HOLD (unsigned = UNVERIFIED, never buzzes; STRICT_DEMO) → HAND TO A PERSON (ranked help queue, a named person closes each entry, Retell transfer, callback ladder ending in a door knock).
 - **Gates, all green:** `node scripts/selftest.mjs` 84/84 · `scripts/server-safety.mjs` 7/7 · `scripts/sw-cache-safety.mjs` · `scripts/test-demo-policy.mjs` · `scripts/mic-loopback.mjs` (needs Playwright).
 - **Verified only in software/headless browser.** Not yet tested: speaker → phone acoustics, a real Retell call/number, spoken fallback with real OS voices, GitHub Pages deploy.
-- **In flight (Codex, uncommitted):** receiver buzz rule. A verified alert should buzz unless GPS positively says the phone is outside the zone (currently it needs a GPS fix to buzz at all).
-- Service worker cache: `chirp-v10` (includes `range/`).
+- **Receiver buzz rule fixed (Codex, fe74fd5):** a verified alert buzzes unless GPS positively places the phone outside the zone; no fix → still buzzes. Strict TEST mode stays quiet.
+- Service worker cache: `chirp-v11` (includes `range/` and the revised receiver).
 
 **Done (Sat ~4:10 AM, Claude + Codex reviews):**
 - Server hardened against Codex's 7-case gate (`scripts/server-safety.mjs` 7/7): supervisor token, every un-recorded call goes to human review, en+es life words, PII retention 1 h/24 h, refuses a corrupt queue. Outbound callback ladder: call → retry → SMS (no provider: skipped, logged) → door knock; silence/voicemail are never "reached".
@@ -168,3 +168,45 @@ Be honest on Devpost: the base code was written with Claude Code, and we should 
 - Cell outages during the Eaton and Palisades fires
 - LA28 visitor numbers and international share; LA's language count
 - Current status of SBIR/STTR authorization, DHS SVIP open topics, and FEMA grant programs (see docs/TWISTS.md)
+
+## 13. Commit log (oldest first; C = Claude Code, X = Codex)
+
+| Commit | By | Summary |
+|---|---|---|
+| 42302bf | team | Scaffold: wire format, Ed25519 signing, phrasebook (9 languages), console, offline receiver PWA, selftest |
+| 24cc7fa | C | Lane split between Claude Code and Codex in CONTEXT |
+| 4065661 | C | CAP/IPAWS import (CAP → codes + zone, refuses expired/Cancel/malformed/oversized, 3 samples) and spoken fallback after signed chirps (Twist 1 build) |
+| 764add7 | C | SLOW rung: 60 s repeat cooldown per alert+zone, typed SEND for wide zones (new zone 99 countywide) |
+| 4551a4d | C | Record user decision: full brief wins, TEST-only scope behind STRICT_DEMO |
+| 06b8840 | C | Reply-chirp codec (18 B → 24 chars, 1.45 s) and help-queue ranking/dedupe, with tests |
+| 7315319 | C | AGENTS.md + HANDOFF.md: the Claude ⇄ Codex message board and file locks |
+| 87f4aa5 | X | TEST-only guard (demo-policy, TEST banners, secret no longer stored), Twist 1 evidence script, proposal docs |
+| ab7a66f | C | Help server: queue, signed-alert readout for the phone line, Retell webhook/functions, mock mode |
+| 981850b | X | TWISTS.md: Twist 1 corrected to the verified NSF SBIR response; unproven claims removed |
+| 88aba21 | C | HANDOFF: lock console/receiver for the STRICT_DEMO work |
+| 0e5d07a | X | docs/DEVICE_TEST.md: physical/offline speaker → phone test protocol |
+| 77b407f | X | HANDOFF: Retell trust gaps found in review |
+| 409da39 | X | HANDOFF: server review gaps (msgId collision, PII retention, corrupt queue) |
+| 4c1ec48 | C | STRICT_DEMO flag; full mode restores CAP broadcast, HOLD rung, help chirp + POST, GPS zone check, console help queue |
+| ae461b7 | C | Server: per-issuer alert keys, help PII retention limits, refuse a corrupt queue |
+| 0d33bd3 | X | scripts/server-safety.mjs: 7 independent server regression gates |
+| a7df828 | C | Phone line says "signed demo alert", not "official"; console shows phone-line publish ack |
+| 57f49e6 | C | HANDOFF/CONTEXT: release locks, status |
+| cc83cfd | C | Server passes all 7 gates: call review, Spanish life words, triage parsing, call-scoped dedupe, supervisor token |
+| 90e320e | C | Console asks for the supervisor token only once |
+| a0b7dce | C | Outbound callback ladder: call → retry → SMS → door knock; silence never counts as reached |
+| a77f066 | C | HANDOFF: server gate green, callback ladder landed |
+| b9bf99d | C | Console help queue: Call back / Escalate buttons, ladder status column |
+| 4c400ba | C | Retell agent prompt + get_active_alerts / report_need schemas matching the server |
+| b99765d | C | Codex review fixes: 12 h validity cap, CAP batch stops on failure, partial repeats count, console PII pruning, /alerts auth |
+| 5422d44 | C | HANDOFF: review fixes landed, release locks |
+| 0a43ff2 | C | HANDOFF: claim P2.7 range test |
+| d6e53a3 | X | Receiver: 12 h validity cap, help-upload lock + retry; SW caches static files only; sw-cache-safety test |
+| cdfb9be | C | Range test: console test pattern, range/ logger page with CSV, browser mic loopback test |
+| 483de12 | C | HANDOFF: range test landed, sw.js request |
+| 75f5b89 | C | HANDOFF: review of d6e53a3 (no buzz without GPS) |
+| 5206bbb | C | CONTEXT: status, next steps, decisions |
+| cd65401 | X | Range page added to the offline cache (v10) |
+| fe74fd5 | X | Buzz fix (quiet only when GPS says outside the zone); DEVICE_TEST records the digital mic check; v11 cache |
+| b8d997b | C | CONTEXT: status snapshot at push |
+| b18c0b2 | X | HANDOFF: browser mic evidence confirmed independently |
