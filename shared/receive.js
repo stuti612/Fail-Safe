@@ -1,7 +1,7 @@
 // Receiver decision for one heard chirp. Pure, so selftest can cover it.
 //   ok        -> show it (verified alerts may buzz; unverified never do: HOLD rung)
 //   dup       -> already shown (same wire, or same signer + msgId)
-//   expired   -> drop
+//   expired   -> show greyed as Expired, never alarm (blocks replayed recordings)
 //   malformed -> drop
 //   pattern   -> range-test pattern (zone 0xFFFF), not an alert: drop
 import { fromWire, unpackBody } from './payload.js';
@@ -16,8 +16,11 @@ export function receiveChirp(text, nowMin, seen = new Set()) {
   // Unsigned chirps dedupe by exact wire only, so a spoof can't suppress a real alert's msgId.
   const key = sender ? `${sender.id}:${alert.msgId}` : text;
   if (seen.has(text) || seen.has(key)) return { status: 'dup' };
-  if (alert.expiresMin < nowMin) return { status: 'expired' };
-  return { status: 'ok', key, entry: { alert, sender: sender && { id: sender.id, name: sender.name }, wire: text } };
+  const entry = { alert, sender: sender && { id: sender.id, name: sender.name }, wire: text };
+  // Expired still carries the entry so the receiver can show "Expired" (a replayed
+  // recording) without ever alarming.
+  if (alert.expiresMin < nowMin) return { status: 'expired', key, entry };
+  return { status: 'ok', key, entry };
 }
 
 // Coarse "is this phone inside the zone?" check. Zones may carry {lat, lon, radiusKm};

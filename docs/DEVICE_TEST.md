@@ -37,6 +37,16 @@ Use a synchronized wall clock or a video with both laptop and phone in frame to 
 4. Tap the local help-note control while offline. It must say **NOT DELIVERED**. No human handoff, Retell call, or dispatcher response is established by this test. In default full mode, test the help chirp separately and verify that a real console microphone records it before claiming that path works.
 5. Count phones or people in the room without a preloaded, unlocked, listening receiver. This is the **unreached group**, even if they are within speaker range.
 
+## Badge, alarm and shelter-screen checks (full mode)
+
+Software path checked in desktop Chromium with `?debug=1` paste (dev2 branch, Oct 17): a signed alert shows **✔ Demo signature**, vibrates, flashes and is announced to screen readers; an exact repeat adds no card; an expired signed alert shows a grey **⏱ This alert has expired** card with no vibration, tone or flash; an unsigned alert shows **⚠ UNVERIFIED** with no vibration, tone or flash; all three survive a reload. **Not yet checked on a phone or through a speaker.** Repeat each over audio:
+
+1. Play `docs/demo-audio/expired.wav` near a listening phone → Expired card, no buzz.
+2. Console spoof button → UNVERIFIED card, no buzz.
+3. Signed alert → Android vibrates, both phones beep twice (660/880 Hz, below the chirp band) and flash.
+4. iPhone VoiceOver / Android TalkBack on → the new alert is read out once (not again every 30 s).
+5. Shelter screen: open `/receiver/?kiosk=1` on a laptop (optional `&langs=en,es,zh,ko`), tap Start. Check: fullscreen, header says **Mic OK**, screen stays awake for 10+ min, a signed alert shows huge text in all listed languages and sounds a ~6 s siren with a **Silence alarm** button. Unplug/replug the mic or switch tabs and back: header shows **Mic restarting…** then **Mic OK**, and the next chirp still decodes.
+
 ## Go/no-go for a stage demonstration
 
 At least 8/10 correct receives at 1 m in a quiet room on each tested phone is a **demo feasibility threshold only**. If either phone fails, show the real failure and use the tested single-phone scope; do not claim a reliable safety service. If no physical speaker-to-phone receive succeeds, present the signed packet and digital loopback as an engineering prototype and remove claims of a working acoustic phone demo.
