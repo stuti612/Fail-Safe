@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CHIRP Range Test</title>
+  <link rel="icon" href="../icon.svg">
+  <link rel="stylesheet" href="../shared/style.css">
+</head>
+<body>
+  <main>
+    <h1>CHIRP Range Test</h1>
+    <p class="small muted">Put this phone at a measured distance, set the labels, tap Listen, then press "Send test pattern" on the console. Each run counts how many of the console's numbered patterns this phone decoded.</p>
+
+    <div class="card">
+      <div class="row">
+        <div><label for="distance">Distance (m)</label><input id="distance" type="number" min="0" step="0.5" value="1"></div>
+        <div>
+          <label for="noise">Noise</label>
+          <select id="noise"><option>quiet room</option><option>talking</option><option>crowd / music</option><option>outdoor street</option></select>
+        </div>
+        <div>
+          <label for="protocol">Console protocol</label>
+          <select id="protocol"><option value="fastest">Fastest</option><option value="fast" selected>Fast</option><option value="normal">Normal</option></select>
+        </div>
+        <div><label for="sent">Patterns sent per run</label><input id="sent" type="number" min="1" max="50" value="10"></div>
+      </div>
+      <label for="device">Device / browser</label><input id="device">
+      <div class="row" style="margin-top:12px">
+        <button id="listen">👂 Listen</button>
+        <button class="secondary" id="csv">⬇ Export CSV</button>
+        <button class="secondary" id="clear">Clear results</button>
+      </div>
+      <div class="level" style="margin-top:10px"><div id="level"></div></div>
+      <p class="small" id="live"></p>
+    </div>
+
+    <h2>Runs</h2>
+    <div class="card">
+      <table>
+        <thead><tr><th>Time</th><th>Run</th><th>Protocol</th><th>Distance</th><th>Noise</th><th>Decoded</th></tr></thead>
+        <tbody id="runs"></tbody>
+      </table>
+    </div>
+  </main>
+
+  <script src="../vendor/ggwave.js"></script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

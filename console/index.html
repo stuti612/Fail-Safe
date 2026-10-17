@@ -10,12 +10,29 @@
 <body>
   <main>
     <h1>CHIRP Broadcaster Console</h1>
-    <p class="muted small">Compose a coded alert, sign it with your agency key, and play it through any speaker.</p>
+    <p class="card">Hackathon prototype with demo keys. No agency or venue has authorized CHIRP. Do not use it for a real incident.</p>
+    <p class="card hidden" id="strict-banner">STRICT TEST MODE · Only the hypothetical Coliseum Gate C TEST scenario can be broadcast. Remove <code>?strict=1</code> for the full console.</p>
 
     <div class="card">
-      <label for="secret">Agency signing key (secret, stays in this browser)</label>
+      <label for="secret">Signing key (held in memory for this page only)</label>
       <input id="secret" type="password" placeholder="Paste the contents of keys/&lt;agency&gt;.secret" autocomplete="off">
       <p class="small" id="key-status"></p>
+    </div>
+
+    <div class="card">
+      <label for="cap">Import a CAP / IPAWS alert (paste CAP 1.2 XML)</label>
+      <textarea id="cap" rows="4" placeholder="&lt;alert xmlns=&quot;urn:oasis:names:tc:emergency:cap:1.2&quot;&gt;…"></textarea>
+      <div class="row" style="margin-top:8px">
+        <select id="cap-sample" aria-label="Load a sample CAP file">
+          <option value="">Load a sample…</option>
+          <option>1-evacuation-altadena</option>
+          <option>2-smoke-multi-area</option>
+          <option>3-unknown-event-tsunami</option>
+        </select>
+        <button class="secondary" id="cap-read">Read CAP</button>
+        <button id="cap-send" class="hidden">📣 Sign &amp; broadcast all</button>
+      </div>
+      <div id="cap-out" class="small"></div>
     </div>
 
     <div class="card">
@@ -39,6 +56,10 @@
         <div><label for="repeats">Repeats</label><input id="repeats" type="number" min="1" max="10" value="3"></div>
         <div><label for="volume">Volume (1–100)</label><input id="volume" type="number" min="1" max="100" value="25"></div>
       </div>
+      <div class="row">
+        <div><label><input type="checkbox" id="speak" checked style="width:auto"> Speak aloud after each chirp (people without the app)</label></div>
+        <div><label for="speak-langs">Spoken languages, in order</label><input id="speak-langs" value="en es zh ko"></div>
+      </div>
       <div class="row" style="margin-top:14px">
         <button id="send">📣 Sign &amp; broadcast</button>
         <button class="secondary" id="spoof">Play spoofed (unsigned) chirp</button>
@@ -48,6 +69,26 @@
 
     <h2>Preview on phones</h2>
     <div class="card" id="preview"></div>
+
+    <h2>Range test</h2>
+    <div class="card">
+      <p class="small muted">Plays numbered test patterns (same 100-char size as a real alert, unsigned, marked TEST) with the protocol and volume above. Phones log them on <a href="../range/">the range page</a>.</p>
+      <div class="row">
+        <div><label for="pattern-n">Patterns per run</label><input id="pattern-n" type="number" min="1" max="50" value="10"></div>
+        <div><label>&nbsp;</label><button class="secondary" id="pattern-send">📶 Send test pattern</button></div>
+      </div>
+      <p class="small" id="pattern-status"></p>
+    </div>
+
+    <h2>Help queue <span class="small muted" id="help-count"></span></h2>
+    <div class="card">
+      <p class="small muted">Resident requests are unsigned: every one is an unverified report, ranked life threat → vulnerable → oldest. Only a named person can close one. Life threat: call 911 / dispatch a person.</p>
+      <button class="secondary" id="help-listen">👂 Listen for help chirps</button>
+      <table>
+        <thead><tr><th>Priority</th><th>Need</th><th>Age</th><th>Where</th><th>Source</th><th></th></tr></thead>
+        <tbody id="help-list"></tbody>
+      </table>
+    </div>
 
     <h2>Broadcast log</h2>
     <div class="card">

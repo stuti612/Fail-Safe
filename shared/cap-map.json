@@ -1,0 +1,31 @@
+{
+  "_note": "CAP/IPAWS -> phrasebook codes. SAME eventCode wins, then the first 'events' entry whose match is contained in <event> (lowercased). Anything else -> generic. Codes must exist in phrasebook.json (selftest checks).",
+  "same": {
+    "EVI": { "type": 1, "detail": 12 },
+    "SPW": { "type": 3, "detail": 8 },
+    "HMW": { "type": 3, "detail": 8 },
+    "FRW": { "type": 2, "detail": 12 },
+    "AQA": { "type": 9, "detail": 8 },
+    "POS": { "type": 7, "detail": 9 },
+    "RMT": { "type": 12, "detail": 0 },
+    "RWT": { "type": 12, "detail": 0 },
+    "DMO": { "type": 12, "detail": 0 }
+  },
+  "events": [
+    { "match": "evacuation immediate", "type": 1, "detail": 12 },
+    { "match": "evacuation order", "type": 1, "detail": 12 },
+    { "match": "evacuation warning", "type": 2, "detail": 12 },
+    { "match": "shelter", "type": 3, "detail": 8 },
+    { "match": "hazardous materials", "type": 3, "detail": 8 },
+    { "match": "fire warning", "type": 2, "detail": 12 },
+    { "match": "smoke", "type": 9, "detail": 8 },
+    { "match": "air quality", "type": 9, "detail": 8 },
+    { "match": "boil water", "type": 6, "detail": 0 },
+    { "match": "power shutoff", "type": 7, "detail": 9 },
+    { "match": "power outage", "type": 7, "detail": 9 },
+    { "match": "road clos", "type": 4, "detail": 7 },
+    { "match": "test", "type": 12, "detail": 0 }
+  ],
+  "generic": { "type": 13, "detail": 10 },
+  "test": { "type": 12, "detail": 0 }
+}

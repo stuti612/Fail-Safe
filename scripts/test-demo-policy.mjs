@@ -1,0 +1,30 @@
+import assert from 'node:assert/strict';
+import { createRequire } from 'node:module';
+import { readFileSync } from 'node:fs';
+
+const require = createRequire(import.meta.url);
+globalThis.nacl = require('../vendor/nacl-fast.min.js');
+const { acceptsDemo, verifiedDemoWire, DEMO } = await import('../shared/demo-policy.js');
+const { packBody, toWire } = await import('../shared/payload.js');
+const { sign } = await import('../shared/trust.js');
+
+const now = 1000;
+const alert = { type: DEMO.type, detail: DEMO.detail, zone: DEMO.zone, expiresMin: now + 1 };
+const signer = { id: DEMO.signerId };
+assert.equal(acceptsDemo(alert, signer, now), true);
+assert.equal(acceptsDemo({ ...alert, type: 1 }, signer, now), false);
+assert.equal(acceptsDemo({ ...alert, type: 11 }, signer, now), false);
+assert.equal(acceptsDemo({ ...alert, zone: 1 }, signer, now), false);
+assert.equal(acceptsDemo(alert, { id: 'la-county-oem' }, now), false);
+assert.equal(acceptsDemo({ ...alert, expiresMin: now - 1 }, signer, now), false);
+assert.equal(acceptsDemo({ ...alert, expiresMin: now + 60 }, signer, now), false);
+const secret = readFileSync(new URL('../keys/coliseum-ops.secret', import.meta.url), 'utf8').trim();
+const body = packBody({ ...alert, msgId: 42 });
+const wire = toWire(body, sign(body, secret));
+assert.equal(verifiedDemoWire(wire, now)?.alert.type, DEMO.type);
+assert.equal(verifiedDemoWire(wire, now + 2), null);
+const forged = toWire(body, new Uint8Array(64).fill(7));
+assert.equal(verifiedDemoWire(forged, now), null);
+assert.equal(verifiedDemoWire('bad packet', now), null);
+assert.equal(verifiedDemoWire(toWire(packBody({ ...alert, type: 1, msgId: 43 }), sign(packBody({ ...alert, type: 1, msgId: 43 }), secret)), now), null);
+console.log('PASS signed TEST code only; emergency, wrong signer/site, malformed and stale packets rejected');

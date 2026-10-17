@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Demo sample: event not in shared/cap-map.json, so the console falls back to the generic OFFICIAL_ALERT code and warns. -->
+<alert xmlns="urn:oasis:names:tc:emergency:cap:1.2">
+  <identifier>CHIRP-DEMO-0003</identifier>
+  <sender>demo@lacounty-oem.example</sender>
+  <sent>2026-10-17T05:00:00-07:00</sent>
+  <status>Actual</status>
+  <msgType>Alert</msgType>
+  <scope>Public</scope>
+  <info>
+    <language>en-US</language>
+    <category>Geo</category>
+    <event>Tsunami Warning</event>
+    <urgency>Immediate</urgency>
+    <severity>Severe</severity>
+    <certainty>Likely</certainty>
+    <expires>2026-12-31T23:59:00-08:00</expires>
+    <headline>Tsunami warning for the Malibu coast</headline>
+    <area><areaDesc>Malibu: Pacific Coast Hwy</areaDesc></area>
+  </info>
+</alert>

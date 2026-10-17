@@ -1,0 +1,39 @@
+{
+  "project": "CHIRP",
+  "generated_at": "2026-10-17T11:25:46.598Z",
+  "twist": "Identify a federal funding pathway",
+  "possible_federal_rd_pathway": {
+    "program": "NSF SBIR Phase I",
+    "solicitation": "https://www.nsf.gov/funding/opportunities/small-business-innovation-research-small-business-technology/nsf26-510/solicitation",
+    "project_pitch": "https://seedfund.nsf.gov/project-pitch/",
+    "limit_usd": 305000,
+    "project_duration_months": "6–18",
+    "status": "Conditional future R&D route. Company eligibility, invitation, technical novelty and customer demand are unproven."
+  },
+  "scope": "Signed TEST code with hypothetical gate scenario and ggwave digital waveform loopback in Node; no physical sound path",
+  "authority": "Demo key only; no agency or venue has authorized this system",
+  "current_wire_has_test_flag": false,
+  "signed_type_is_test": true,
+  "packet_characters": 100,
+  "protocol_checks": {
+    "packet_100_characters": true,
+    "signature_verifies_with_demo_venue_key": true,
+    "tampered_body_rejected": true,
+    "random_signature_rejected": true
+  },
+  "digital_waveform_trials": [
+    {
+      "protocol": "AUDIBLE_FAST",
+      "digital_waveform_seconds": 6.83,
+      "decoded_same_packet": true
+    },
+    {
+      "protocol": "AUDIBLE_FASTEST",
+      "digital_waveform_seconds": 3.75,
+      "decoded_same_packet": true
+    }
+  ],
+  "speaker_to_phone_trials": null,
+  "offline_phone_trials": null,
+  "venue_reach": null
+}
