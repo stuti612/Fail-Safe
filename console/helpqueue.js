@@ -10,9 +10,11 @@ import { HELP_ENDPOINT } from '../shared/config.js';
 const SERVER = HELP_ENDPOINT.replace(/\/help\/?$/, '');
 // Supervisor token (server CHIRP_SUPERVISOR_TOKEN), asked once, kept for this tab only.
 const auth = () => { try { return { Authorization: `Bearer ${sessionStorage.getItem('chirp.token') || ''}` }; } catch { return {}; } };
+let asked = false;
 async function supervisorFetch(url, opts = {}) {
   let res = await fetch(url, { ...opts, headers: { ...opts.headers, ...auth() } });
-  if (res.status === 401) {
+  if (res.status === 401 && !asked) {
+    asked = true; // ask once; reload the page to retry
     const t = prompt('Supervisor token for the help server:');
     if (!t) return res;
     try { sessionStorage.setItem('chirp.token', t.trim()); } catch {}
