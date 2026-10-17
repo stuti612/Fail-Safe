@@ -5,9 +5,10 @@
   "4": { "name": "Pacific Palisades: Palisades Dr", "area": "Pacific Palisades" },
   "5": { "name": "Malibu: Pacific Coast Hwy", "area": "Malibu" },
   "10": { "name": "LA Memorial Coliseum: Gate C", "area": "Exposition Park" },
-  "11": { "name": "LA Memorial Coliseum: all gates", "area": "Exposition Park" },
+  "11": { "name": "LA Memorial Coliseum: all gates", "area": "Exposition Park", "wide": true },
   "12": { "name": "SoFi Stadium: North entry", "area": "Inglewood" },
   "20": { "name": "Metro 7th St/Metro Center platform", "area": "Downtown LA" },
   "21": { "name": "Union Station", "area": "Downtown LA" },
-  "30": { "name": "USC: Ronald Tutor Hall", "area": "University Park" }
+  "30": { "name": "USC: Ronald Tutor Hall", "area": "University Park" },
+  "99": { "name": "LA County: countywide", "area": "Los Angeles County", "wide": true }
 }

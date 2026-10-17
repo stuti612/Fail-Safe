@@ -6,7 +6,7 @@ Each response says what changed, why, and gives proof. Judges reward changes to 
 
 ## Twist 1 (Fri 11:30 PM): Identify a federal funding pathway
 
-**Status:** pathway drafted. CAP/IPAWS import BUILT (Sat ~4:30 AM): console card "Import a CAP / IPAWS alert". Due about Sat 5:30 AM.
+**Status:** pathway drafted. CAP/IPAWS import BUILT (Sat ~3:40 AM): console card "Import a CAP / IPAWS alert". Due about Sat 5:30 AM.
 
 ### What changed
 - **Primary funding path:** DHS Science & Technology Directorate, **Silicon Valley Innovation Program (SVIP)**. It funds startups in non-dilutive phases for homeland-security and first-responder technology, and emergency alerting fits squarely.

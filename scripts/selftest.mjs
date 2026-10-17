@@ -104,4 +104,14 @@ r = parseCap(cap({ extra: `<description>${'long text '.repeat(3000)}</descriptio
 const capBody = packBody({ ...r.alerts[0], msgId: 1 });
 check('long CAP description still yields a 100-char chirp (codes only)', toWire(capBody, sign(capBody, secret)).length === 100);
 
+// ---- SLOW rung ----
+const { waitSeconds, isWide, slowKey } = await import('../console/slow.js');
+const a1 = { type: 1, zone: 1 };
+check('first broadcast is not slowed', waitSeconds(a1, {}, 1e12) === 0);
+check('repeat within 60 s is slowed', waitSeconds(a1, { [slowKey(a1)]: 1e12 }, 1e12 + 10_000) === 50);
+check('repeat after 60 s is allowed', waitSeconds(a1, { [slowKey(a1)]: 1e12 }, 1e12 + 60_000) === 0);
+check('same alert to another zone is not slowed', waitSeconds({ type: 1, zone: 2 }, { [slowKey(a1)]: 1e12 }, 1e12) === 0);
+check('countywide and all-gates zones need a second confirm', isWide({ zone: 99 }, zones) && isWide({ zone: 11 }, zones) && !isWide(a1, zones));
+check('CAP "Los Angeles County" maps to the countywide zone', parseCap(cap({ areas: ['Los Angeles County'] }), opts).alerts[0].zone === 99);
+
 process.exit(failed ? 1 : 0);

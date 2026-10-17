@@ -5,6 +5,7 @@ import { sign, publicKeyFromSecret, findTrustedKey } from '../shared/trust.js';
 import { loadPhrasebook, languages, describe, types, details, allZones } from '../shared/phrasebook.js';
 import { parseCap } from './cap.js';
 import { speakAlert } from './speak.js';
+import { waitSeconds, isWide, slowKey } from './slow.js';
 
 const $ = (id) => document.getElementById(id);
 const store = {
@@ -82,6 +83,15 @@ $('send').onclick = () => signAndBroadcast(currentAlert());
 function signAndBroadcast(alert) {
   const secret = $('secret').value.trim();
   if (!secret) return ($('status').textContent = 'Load a signing key first.');
+  const sentAt = store.get('chirp.console.sentAt', {});
+  const wait = waitSeconds(alert, sentAt, Date.now());
+  if (wait) return ($('status').textContent = `SLOW: this alert just went to this zone. Wait ${wait} s before repeating it.`);
+  if (isWide(alert, allZones())) {
+    const d = describe(alert, 'en');
+    const typed = prompt(`WIDE-AREA ALERT\n"${d.title}" to everyone in ${d.zone}.\nType SEND to confirm.`);
+    if (typed?.trim().toUpperCase() !== 'SEND') return ($('status').textContent = 'Wide-area alert not confirmed. Nothing sent.');
+  }
+  store.set('chirp.console.sentAt', { ...sentAt, [slowKey(alert)]: Date.now() });
   const body = packBody(alert);
   return broadcast(alert, toWire(body, sign(body, secret)), agency ? agency.name : 'Untrusted key', $('speak').checked);
 }

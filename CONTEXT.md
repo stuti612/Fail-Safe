@@ -96,7 +96,8 @@ Be honest on Devpost: the base code was written with Claude Code, and we should 
 
 ## 8. Status
 
-**Done (Sat ~4:30 AM, Claude):**
+**Done (Sat ~3:45 AM, Claude):**
+- SLOW rung (`console/slow.js`): same alert to same zone blocked for 60 s; wide zones (`"wide": true` in zones.json: Coliseum all gates, new zone 99 LA County countywide) need typed SEND confirm. 6 selftest cases, browser-checked.
 - CAP/IPAWS import in the console (`console/cap.js`, `shared/cap-map.json`, 3 samples in `docs/samples/`). 18 selftest cases. New phrasebook type 13 OFFICIAL_ALERT (generic fallback).
 - Spoken fallback (`console/speak.js`): after a signed chirp, the console reads the alert aloud in the chosen languages (OS voices, offline where installed). Log shows chirp + speech + total airtime. Not yet measured on real speakers.
 
@@ -121,12 +122,14 @@ Be honest on Devpost: the base code was written with Claude Code, and we should 
 
 ## 10. Twist log
 
-- **Twist 1 (Fri 11:30 PM): identify a federal funding pathway.** Draft response in `docs/TWISTS.md`. Build change: CAP/IPAWS import, built Sat ~4:30 AM (proof checklist in TWISTS.md; clip still to record).
+- **Twist 1 (Fri 11:30 PM): identify a federal funding pathway.** Draft response in `docs/TWISTS.md`. Build change: CAP/IPAWS import, built Sat ~3:40 AM (proof checklist in TWISTS.md; clip still to record).
 
 ## 11. Decision log
 
-- **Sat 4:30 AM:** CAP import maps codes only; CAP free text never goes on air. Unknown event → new generic type 13 OFFICIAL_ALERT + operator warning; non-Actual status → TEST; Cancel/expired refused. Zone match is word overlap (`matchZone`), else manual pick.
-- **Sat 4:30 AM:** Spoken fallback uses speechSynthesis with phrasebook text (no AI translation), only after *signed* broadcasts, never after the spoof button.
+- **Sat 3:45 AM:** SLOW = 60 s per type+zone cooldown (hard block, no override) + typed SEND for wide zones. Applies to signed sends and CAP batch; spoof button exempt (it's the attack demo).
+
+- **Sat 3:40 AM:** CAP import maps codes only; CAP free text never goes on air. Unknown event → new generic type 13 OFFICIAL_ALERT + operator warning; non-Actual status → TEST; Cancel/expired refused. Zone match is word overlap (`matchZone`), else manual pick.
+- **Sat 3:40 AM:** Spoken fallback uses speechSynthesis with phrasebook text (no AI translation), only after *signed* broadcasts, never after the spoof button.
 
 - **Sat 2 AM:** Plain HTML and ES modules, no build step. Fastest to iterate, works on GitHub Pages, and is easy to cache offline.
 - **Sat 2 AM:** Default protocol is AUDIBLE_FAST (6.8 s). FASTEST is available in the console if range allows.
