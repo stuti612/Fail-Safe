@@ -18,7 +18,7 @@ Each response says what changed, why, and gives proof. Judges reward changes to 
 
 **Next proof gate:** follow `docs/DEVICE_TEST.md`. Reload each phone online so SW v11 is active, run the range page at 1 m / 3 m / noisy, then CAP sample 1 → chirp → a Spanish-language phone, with radios off after cache readiness. Record successes, failures, latency, devices, distance and noise. Do not infer reach from speaker range or digital loopback.
 
-**Paste-ready response:** "Our possible future federal funding pathway is NSF SBIR Phase I. An eligible U.S. small business could seek up to $305,000 over 6–18 months to research reliable, authenticated acoustic advisories through noisy speakers, if CHIRP establishes genuine technical novelty and customer demand. An NSF Project Pitch and official invitation are required before a full proposal; we have neither. Build change for this twist: CHIRP's console now imports Common Alerting Protocol (CAP 1.2) messages, the format IPAWS uses, and turns them into signed, coded chirps per zone. It refuses expired, cancelled or malformed alerts, and never broadcasts free text. This is tested in software and a headless browser; speaker-to-phone and offline-phone results are pending, and we claim no IPAWS connection or agency authority."
+**Paste-ready response:** use the one in [`TWIST1_VERIFIED.md`](TWIST1_VERIFIED.md) (single source; it must name the CAP 1.2 import as this twist's build change).
 
 ---
 
