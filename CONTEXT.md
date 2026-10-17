@@ -99,12 +99,18 @@ Be honest on Devpost: the base code was written with Claude Code, and we should 
 
 ## 8. Status
 
-**Done (Sat ~4:45 AM, Claude):**
+**Done (Sat ~4:10 AM, Claude + Codex reviews):**
+- Server hardened against Codex's 7-case gate (`scripts/server-safety.mjs` 7/7): supervisor token, every un-recorded call goes to human review, en+es life words, PII retention 1 h/24 h, refuses a corrupt queue. Outbound callback ladder: call → retry → SMS (no provider: skipped, logged) → door knock; silence/voicemail are never "reached".
+- Validity capped at 12 h on console and receiver (bounds replay). The CAP batch stops on the first failure.
+- P2.7 range test: console "Send test pattern" + `range/` logger page with CSV export. `scripts/mic-loopback.mjs`: real ggwave audio fed as the browser mic → range 3/3 + receiver shows the signed alert (digital, not acoustic).
+- `retell/agent_prompt.md`: setup + function schemas matching the server.
+
+**Done (Sat ~3:55 AM, Claude):**
 - STRICT_DEMO flag (`?strict=1`): Codex's TEST-only scope. The default full mode restores CAP broadcast, the HOLD rung (unsigned = UNVERIFIED, no buzz), the receiver help form → reply chirp + POST, a GPS "another area" check, and the console HELP QUEUE.
 - `shared/help.js` reply-chirp codec (18 B → 24 chars, 1.45 s FASTEST). `shared/receive.js` (dedupe by signer+msgId, expiry, zone distance). `server/` help server + Retell webhook/functions + mock mode.
 - selftest 71/71. Headless e2e passes for both modes. Real-device and real-Retell tests are still pending.
 
-**Done (Sat ~3:45 AM, Claude):**
+**Done (Sat ~3:45 AM, Claude, earlier):**
 - SLOW rung (`console/slow.js`): same alert to same zone blocked for 60 s; wide zones (`"wide": true` in zones.json: Coliseum all gates, new zone 99 LA County countywide) need typed SEND confirm. 6 selftest cases, browser-checked.
 - CAP/IPAWS import in the console (`console/cap.js`, `shared/cap-map.json`, 3 samples in `docs/samples/`). 18 selftest cases. New phrasebook type 13 OFFICIAL_ALERT (generic fallback).
 - Spoken fallback (`console/speak.js`): after a signed chirp, the console reads the alert aloud in the chosen languages (OS voices, offline where installed). Log shows chirp + speech + total airtime. Not yet measured on real speakers.
@@ -119,12 +125,12 @@ Be honest on Devpost: the base code was written with Claude Code, and we should 
 
 ## 9. Next steps (in priority order)
 
-1. **Real-device test:** console on a laptop, receiver on 2 phones (iOS and Android), Wi-Fi off. Measure range.
-2. Twist 1 proof clip: CAP sample → chirp → phone shows Spanish. Measure spoken-fallback airtime on the real laptop (which voices exist offline?).
-3. Deploy to GitHub Pages so phones get HTTPS.
-4. Retell agent and number. Put the number in `shared/config.js`.
-5. Native-speaker review of the top 5 codes. Set `reviewed: true` in phrasebook.json.
-6. Help-request server (HELP_ENDPOINT) and supervisor queue view (stretch).
+1. **Push + deploy** (GitHub Pages) so phones get HTTPS. Push needs a human (the agent's push was blocked).
+2. **Real-device test** with the range page (`docs/DEVICE_TEST.md`): laptop speaker → 2 phones, Wi-Fi off, 1/3/10 m, quiet + noisy. Export CSV for slides.
+3. Twist 1 proof clip: CAP sample → chirp → phone shows Spanish. Then restore the CAP claim in TWISTS.md. Measure spoken-fallback airtime (which on-device voices exist?).
+4. Retell: create the agent from `retell/agent_prompt.md`, tunnel `server/server.mjs`, set RETELL_PHONE / HELP_ENDPOINT. Test one real inbound call + one callback.
+5. Native-speaker review of the top 5 codes + the new help UI strings. Set `reviewed: true`.
+6. Revocation beyond expiry (cancel / ALL CLEAR flow), still open.
 7. Twists 2 and 3.
 8. Deck, demo video (by 7 PM), Devpost (by 9:30 PM).
 
@@ -133,6 +139,10 @@ Be honest on Devpost: the base code was written with Claude Code, and we should 
 - **Twist 1 (Fri 11:30 PM): identify a federal funding pathway.** Draft response in `docs/TWISTS.md`. Build change: CAP/IPAWS import, built Sat ~3:40 AM (proof checklist in TWISTS.md; clip still to record).
 
 ## 11. Decision log
+
+- **Sat ~4:10 AM:** Every inbound call that ends without an agent-recorded need goes to human review (Codex gate). We don't automate "this caller needs nothing".
+- **Sat ~4:05 AM:** Max alert validity is 12 h (console, CAP, receiver) to bound replay of recorded chirps. Revocation is not built.
+- **Sat ~4:00 AM (user):** Full brief wins. Codex's TEST-only scope stays available behind `STRICT_DEMO` (`?strict=1`), default off.
 
 - **Sat 3:45 AM:** SLOW = 60 s per type+zone cooldown (hard block, no override) + typed SEND for wide zones. Applies to signed sends and CAP batch; spoof button exempt (it's the attack demo).
 
