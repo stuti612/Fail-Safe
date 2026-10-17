@@ -1,0 +1,129 @@
+# CHIRP: Project Context
+
+> **Living file.** Read this before working on the repo, and update it whenever a decision, status, or measured fact changes. Newest entries go at the top of each log.
+
+## 1. Event facts
+
+- **Event:** InnovateLA x Dual-Use Hackathon F26, USC, Oct 16–18 2026
+- **Submission deadline:** **Sat Oct 17, 10:00 PM on Devpost. No extensions.** Aim to submit by 9:30 PM.
+- **Finals:** Sun 12:00–3:30 PM, Ginsburg Hall. Finalists' deck is due Sun 9 AM.
+- **Lens:** Resilience Comms (sponsor **Retell AI**). Also entering **Best Build with IBM Bob**.
+- **Twists:** Fri 11:30 PM, Sat 4:30 AM, Sat 7:00 AM (one flyer says 9:30 AM, so check the portal). Each response is due **within 6 hours**. Judges want build changes, not just slide changes.
+- **Scorecard (1–5 each):** dual-use fit (breaks ties), technical execution, feasibility and impact, adapting to twists, demo and pitch.
+- **Devpost needs:** name, lens, one line, deck, demo video, repo, all teammates listed, a **responsible-use note**, the tools used, and a "How we used IBM Bob" section.
+
+## 2. The prompt, in one breath
+
+Automated systems misbehave. The usual response is a "bang" (shut it down, alert everyone), and that often costs more than the problem. Find the **gentlest response that still works** for **one person who has to decide**. The ladder is **watch → ask → slow → hold → hand to a person**. It must be useful on an ordinary day too. Name the second customer.
+
+## 3. What we're building
+
+**CHIRP turns any speaker into a signed, offline, multilingual alert channel.**
+A responder's console encodes a short **signed code** as an audible chirp (data-over-sound, using ggwave). Phones within earshot decode it **offline**, verify the signature, and show the alert in **the phone's own language** from a fixed phrasebook, so no AI translation is involved at receive time.
+
+- **Decider:** the fire captain or incident commander choosing *who* to warn. The "bang" is a countywide push alert, like the Jan 2025 LA County false alert. CHIRP warns only the people within earshot.
+- **Second customer (ordinary Tuesday):** "Tuesday, 6:40 PM, Coliseum event-ops lead re-routing 70,000 fans after a gate jam" → multilingual wayfinding for LA28. Also SCE planned power shutoffs (PSPS) and LA Metro.
+- **Ladder mapping:** unsigned chirps are shown as UNVERIFIED and never buzz the phone (**hold**) · "I need help" is queued offline (**ask**) · Retell voice line in the caller's language reaches a human (**hand to a person**).
+
+## 4. Architecture and file map
+
+```
+console/      Broadcaster console (compose → sign → encode → play, spoof button, log)
+receiver/     Phone PWA (tap to listen → decode → verify → show in user's language,
+              "I need help" offline queue, Retell call button, ?debug=1 paste box)
+shared/
+  payload.js     Wire format v1 (pack/unpack, base64)
+  trust.js       Ed25519 sign/verify against TRUSTED_KEYS
+  keys.js        GENERATED public keys of trusted agencies (scripts/genkeys.mjs)
+  audio.js       ggwave wrapper: initAudio / encode / play / listen
+  phrasebook.json  Alert types, details, UI strings × 9 languages
+  phrasebook.js    Loads phrasebook + zones, describe(alert, lang)
+  zones.json       Zone id → LA place name
+  config.js        RETELL_PHONE, HELP_ENDPOINT (both empty for now)
+vendor/       ggwave.js 0.4.0 (wasm inline), tweetnacl 1.0.3 (vendored, so it works offline)
+sw.js         Service worker: caches everything, network-first. BUMP VERSION when files change.
+scripts/      genkeys.mjs (demo agency keys) · selftest.mjs (Node end-to-end test)
+keys/         Agency SECRET keys. Gitignored. Never commit.
+retell/       Retell agent prompt and setup notes
+docs/         TWISTS.md (twist responses) · IBM_BOB_LOG.md
+```
+
+**Wire format v1 (shared/payload.js):** 11-byte body + 64-byte Ed25519 signature → base64, **100 chars**.
+Body: `version(1) type(1) detail(1) zone(u16) expiresUnixMinutes(u32) msgId(u16)`.
+Codes are append-only. Never renumber a phrasebook code, because old phones would show the wrong text.
+
+## 5. Measured facts (from `node scripts/selftest.mjs`)
+
+| Protocol | Airtime for a 100-char signed alert | Node round-trip |
+|---|---|---|
+| Audible FASTEST | 3.75 s | ✅ |
+| Audible FAST (default) | 6.83 s | ✅ |
+| Audible NORMAL | 9.90 s | ✅ |
+
+- ggwave raw bandwidth is about 8–16 bytes/s, with a max payload of about 140 bytes.
+- **Gotcha:** ggwave's JS `encode` takes a JS string and UTF-8-encodes it, so raw binary gets corrupted. That's why we use base64.
+- **Gotcha:** ggwave has a small fixed **instance limit**. Creating extra instances silently breaks decoding. Use exactly one per page (audio.js already does this).
+- **Not yet measured:** real speaker→phone range and noise robustness. Test at 1 m, 3 m and 10 m in a loud room.
+
+## 6. How to run
+
+```bash
+node scripts/genkeys.mjs        # once: creates keys/*.secret and shared/keys.js
+node scripts/selftest.mjs       # sign + audio round-trip check, no browser
+python3 -m http.server 8000     # then open http://localhost:8000
+```
+- On a laptop, `localhost` counts as secure, so the mic works.
+- **Phones need HTTPS.** Deploy with GitHub Pages (Settings → Pages → main / root), or tunnel with `npx localtunnel --port 8000` or ngrok.
+- In the console, paste the contents of `keys/la-county-oem.secret` into the key box.
+- On iOS: tap "Start listening" (required for audio), and keep the screen on (wake lock is requested automatically).
+
+## 7. Sponsor tools
+
+| Sponsor | Use | Status |
+|---|---|---|
+| **Retell AI** (our lens) | A multilingual voice agent: the "Call for help in my language" button, plus a call-in line for people without smartphones that reads the current alerts aloud. Never-automate rules hand calls to a human. Stretch goal: outbound callbacks for queued help requests ("what if they don't pick up?"). Use the $10 credits. | Prompt drafted in `retell/agent_prompt.md`. Agent and number not created yet |
+| **IBM Bob** (all-lens prize) | Build real features in Bob (next up: CAP/IPAWS import, the help-request server, Retell webhook). Log every use. | Log template in `docs/IBM_BOB_LOG.md` |
+| Southern California Edison (food sponsor) | Pitch only: SCE runs planned power shutoffs (PSPS). Our POWER_SHUTOFF code is a natural everyday customer | n/a |
+| Terminal49 | Only if a twist pushes us toward ports (gate-queue chirps for truckers). Needs real API data | Not planned |
+
+Be honest on Devpost: the base code was written with Claude Code, and we should name which features were built in Bob. The rules require listing all tools.
+
+## 8. Status
+
+**Done (Sat ~2 AM):**
+- Repo scaffold. Wire format, signing and phrasebook (12 alert types, 13 details, 9 languages: en es zh ko tl vi ja pt ru).
+- Self-test passing: sign → audio → decode → verify works, and tampered or random signatures are rejected.
+- Console: compose, sign, play, spoof button, multilingual preview, log.
+- Receiver: listen, verify, localized alert card, unverified styling, dedupe, expiry, help queue, offline service worker, debug paste.
+
+**Not yet verified in a real browser.** First task: laptop speaker → phone mic test.
+
+## 9. Next steps (in priority order)
+
+1. **Real-device test:** console on a laptop, receiver on 2 phones (iOS and Android), Wi-Fi off. Measure range.
+2. **Twist 1 build proof: CAP/IPAWS import in the console.** Paste CAP XML → map `<event>`/`<areaDesc>` to codes → sign → chirp. Good candidate to build with IBM Bob. Due about 5:30 AM.
+3. Deploy to GitHub Pages so phones get HTTPS.
+4. Retell agent and number. Put the number in `shared/config.js`.
+5. Native-speaker review of the top 5 codes. Set `reviewed: true` in phrasebook.json.
+6. Help-request server (HELP_ENDPOINT) and supervisor queue view (stretch).
+7. Twists 2 and 3.
+8. Deck, demo video (by 7 PM), Devpost (by 9:30 PM).
+
+## 10. Twist log
+
+- **Twist 1 (Fri 11:30 PM): identify a federal funding pathway.** Draft response in `docs/TWISTS.md`. The build change is CAP/IPAWS import (not built yet).
+
+## 11. Decision log
+
+- **Sat 2 AM:** Plain HTML and ES modules, no build step. Fastest to iterate, works on GitHub Pages, and is easy to cache offline.
+- **Sat 2 AM:** Default protocol is AUDIBLE_FAST (6.8 s). FASTEST is available in the console if range allows.
+- **Sat 2 AM:** Two demo trusted agencies: LA County OEM and Coliseum Event Ops (shows the dual use).
+- **Sat 2 AM:** Base64 over the air (binary is corrupted by ggwave's UTF-8 handling).
+- **Fri night:** Chose CHIRP for the Resilience Comms lens. Dropped the evacuation router (poor fit with the prompt).
+
+## 12. Facts to verify before they go on slides
+
+- Jan 2025 LA County false evacuation alert: date, and how many phones it reached
+- Cell outages during the Eaton and Palisades fires
+- LA28 visitor numbers and international share; LA's language count
+- Current status of SBIR/STTR authorization, DHS SVIP open topics, and FEMA grant programs (see docs/TWISTS.md)

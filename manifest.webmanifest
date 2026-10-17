@@ -1,0 +1,11 @@
+{
+  "name": "CHIRP Alerts",
+  "short_name": "CHIRP",
+  "description": "Signed, offline, multilingual alerts that travel by sound.",
+  "start_url": "./receiver/",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#111114",
+  "theme_color": "#c4161c",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

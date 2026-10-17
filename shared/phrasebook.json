@@ -1,0 +1,94 @@
+{
+  "_note": "Codes are fixed; only add new ones, never renumber. All non-English text is machine-drafted until a native speaker signs it off (set reviewed: true).",
+  "languages": {
+    "en": { "name": "English", "reviewed": true },
+    "es": { "name": "Español", "reviewed": false },
+    "zh": { "name": "中文", "reviewed": false },
+    "ko": { "name": "한국어", "reviewed": false },
+    "tl": { "name": "Tagalog", "reviewed": false },
+    "vi": { "name": "Tiếng Việt", "reviewed": false },
+    "ja": { "name": "日本語", "reviewed": false },
+    "pt": { "name": "Português", "reviewed": false },
+    "ru": { "name": "Русский", "reviewed": false }
+  },
+  "types": {
+    "1": {
+      "key": "EVACUATE", "severity": "extreme", "icon": "🚨",
+      "text": { "en": "EVACUATE NOW", "es": "EVACÚE AHORA", "zh": "立即撤离", "ko": "지금 즉시 대피하세요", "tl": "LUMIKAS NA NGAYON", "vi": "SƠ TÁN NGAY", "ja": "今すぐ避難してください", "pt": "EVACUE AGORA", "ru": "НЕМЕДЛЕННО ЭВАКУИРУЙТЕСЬ" }
+    },
+    "2": {
+      "key": "EVACUATION_WARNING", "severity": "severe", "icon": "⚠️",
+      "text": { "en": "Evacuation warning: get ready to leave", "es": "Aviso de evacuación: prepárese para salir", "zh": "疏散警告：请做好离开准备", "ko": "대피 경고: 떠날 준비를 하세요", "tl": "Babala sa paglikas: maghanda nang umalis", "vi": "Cảnh báo sơ tán: hãy chuẩn bị rời đi", "ja": "避難警告：避難の準備をしてください", "pt": "Alerta de evacuação: prepare-se para sair", "ru": "Предупреждение об эвакуации: будьте готовы уйти" }
+    },
+    "3": {
+      "key": "SHELTER_IN_PLACE", "severity": "extreme", "icon": "🏠",
+      "text": { "en": "SHELTER IN PLACE", "es": "REFÚGIESE EN EL LUGAR", "zh": "就地避难", "ko": "실내에 머무르며 대피하세요", "tl": "MANATILI KUNG NASAAN KA AT SUMILONG", "vi": "TRÚ ẨN TẠI CHỖ", "ja": "屋内に退避してください", "pt": "ABRIGUE-SE NO LOCAL", "ru": "УКРОЙТЕСЬ НА МЕСТЕ" }
+    },
+    "4": {
+      "key": "ROAD_CLOSED", "severity": "moderate", "icon": "🚧",
+      "text": { "en": "Road closed", "es": "Calle cerrada", "zh": "道路封闭", "ko": "도로 폐쇄", "tl": "Sarado ang daan", "vi": "Đường đã đóng", "ja": "通行止め", "pt": "Via interditada", "ru": "Дорога закрыта" }
+    },
+    "5": {
+      "key": "GATE_CHANGE", "severity": "info", "icon": "🚪",
+      "text": { "en": "Entrance closed: use another gate", "es": "Entrada cerrada: use otra puerta", "zh": "入口已关闭：请使用其他入口", "ko": "입구 폐쇄: 다른 게이트를 이용하세요", "tl": "Sarado ang pasukan: gumamit ng ibang gate", "vi": "Lối vào đã đóng: hãy dùng cổng khác", "ja": "入口閉鎖中：別のゲートをご利用ください", "pt": "Entrada fechada: use outro portão", "ru": "Вход закрыт: воспользуйтесь другим входом" }
+    },
+    "6": {
+      "key": "BOIL_WATER", "severity": "moderate", "icon": "💧",
+      "text": { "en": "Boil water before drinking", "es": "Hierva el agua antes de beberla", "zh": "饮用前请将水煮沸", "ko": "물을 끓여서 드세요", "tl": "Pakuluan ang tubig bago inumin", "vi": "Đun sôi nước trước khi uống", "ja": "水は煮沸してから飲んでください", "pt": "Ferva a água antes de beber", "ru": "Кипятите воду перед питьём" }
+    },
+    "7": {
+      "key": "POWER_SHUTOFF", "severity": "moderate", "icon": "⚡",
+      "text": { "en": "Planned power shutoff", "es": "Corte de electricidad programado", "zh": "计划停电", "ko": "계획 정전", "tl": "Nakatakdang pagputol ng kuryente", "vi": "Cắt điện theo kế hoạch", "ja": "計画停電", "pt": "Corte de energia programado", "ru": "Плановое отключение электроэнергии" }
+    },
+    "8": {
+      "key": "COOLING_CENTER_OPEN", "severity": "info", "icon": "❄️",
+      "text": { "en": "Cooling center open", "es": "Centro de enfriamiento abierto", "zh": "避暑中心已开放", "ko": "무더위 쉼터 운영 중", "tl": "Bukas ang cooling center", "vi": "Trung tâm làm mát đang mở cửa", "ja": "クーリングセンター開設中", "pt": "Centro de resfriamento aberto", "ru": "Открыт пункт охлаждения" }
+    },
+    "9": {
+      "key": "SMOKE_AIR", "severity": "moderate", "icon": "😷",
+      "text": { "en": "Unhealthy air: smoke in the area", "es": "Aire insalubre: hay humo en la zona", "zh": "空气不健康：该地区有烟雾", "ko": "대기 질 나쁨: 지역에 연기 발생", "tl": "Hindi ligtas na hangin: may usok sa lugar", "vi": "Không khí ô nhiễm: có khói trong khu vực", "ja": "大気汚染：周辺に煙が発生しています", "pt": "Ar insalubre: fumaça na região", "ru": "Вредный воздух: в районе дым" }
+    },
+    "10": {
+      "key": "AUTONOMOUS_HAZARD", "severity": "moderate", "icon": "🤖",
+      "text": { "en": "Automated vehicle or drone malfunction nearby", "es": "Vehículo autónomo o dron con fallas cerca", "zh": "附近有自动驾驶车辆或无人机发生故障", "ko": "인근 자율주행 차량 또는 드론 오작동", "tl": "May sirang awtomatikong sasakyan o drone sa malapit", "vi": "Xe tự lái hoặc drone gặp sự cố gần đây", "ja": "付近で自動運転車またはドローンが故障しています", "pt": "Veículo autônomo ou drone com defeito nas proximidades", "ru": "Поблизости неисправен беспилотный автомобиль или дрон" }
+    },
+    "11": {
+      "key": "ALL_CLEAR", "severity": "info", "icon": "✅",
+      "text": { "en": "All clear", "es": "Fin de la alerta", "zh": "警报解除", "ko": "경보 해제", "tl": "Ligtas na: tapos na ang alerto", "vi": "Đã hết nguy hiểm", "ja": "警報解除", "pt": "Fim do alerta", "ru": "Отбой тревоги" }
+    },
+    "12": {
+      "key": "TEST", "severity": "info", "icon": "🧪",
+      "text": { "en": "This is a test. No action needed.", "es": "Esto es una prueba. No se requiere ninguna acción.", "zh": "这是一次测试，无需采取任何行动。", "ko": "테스트입니다. 조치가 필요하지 않습니다.", "tl": "Ito ay isang pagsubok. Walang kailangang gawin.", "vi": "Đây là thử nghiệm. Không cần làm gì.", "ja": "これはテストです。対応は不要です。", "pt": "Isto é um teste. Nenhuma ação necessária.", "ru": "Это проверка. Никаких действий не требуется." }
+    }
+  },
+  "details": {
+    "0": { "key": "NONE", "text": { "en": "", "es": "", "zh": "", "ko": "", "tl": "", "vi": "", "ja": "", "pt": "", "ru": "" } },
+    "1": { "key": "GO_NORTH", "text": { "en": "Leave heading north", "es": "Salga en dirección norte", "zh": "向北撤离", "ko": "북쪽으로 이동하세요", "tl": "Umalis papuntang hilaga", "vi": "Di chuyển về hướng bắc", "ja": "北へ向かって避難してください", "pt": "Saia em direção ao norte", "ru": "Уходите на север" } },
+    "2": { "key": "GO_SOUTH", "text": { "en": "Leave heading south", "es": "Salga en dirección sur", "zh": "向南撤离", "ko": "남쪽으로 이동하세요", "tl": "Umalis papuntang timog", "vi": "Di chuyển về hướng nam", "ja": "南へ向かって避難してください", "pt": "Saia em direção ao sul", "ru": "Уходите на юг" } },
+    "3": { "key": "GO_EAST", "text": { "en": "Leave heading east", "es": "Salga en dirección este", "zh": "向东撤离", "ko": "동쪽으로 이동하세요", "tl": "Umalis papuntang silangan", "vi": "Di chuyển về hướng đông", "ja": "東へ向かって避難してください", "pt": "Saia em direção ao leste", "ru": "Уходите на восток" } },
+    "4": { "key": "GO_WEST", "text": { "en": "Leave heading west", "es": "Salga en dirección oeste", "zh": "向西撤离", "ko": "서쪽으로 이동하세요", "tl": "Umalis papuntang kanluran", "vi": "Di chuyển về hướng tây", "ja": "西へ向かって避難してください", "pt": "Saia em direção ao oeste", "ru": "Уходите на запад" } },
+    "5": { "key": "NEAREST_EXIT", "text": { "en": "Use the nearest exit", "es": "Use la salida más cercana", "zh": "请使用最近的出口", "ko": "가장 가까운 출구를 이용하세요", "tl": "Gamitin ang pinakamalapit na labasan", "vi": "Hãy dùng lối ra gần nhất", "ja": "最寄りの出口をご利用ください", "pt": "Use a saída mais próxima", "ru": "Используйте ближайший выход" } },
+    "6": { "key": "FOLLOW_STAFF", "text": { "en": "Follow instructions from staff and responders", "es": "Siga las instrucciones del personal y los socorristas", "zh": "请听从工作人员和救援人员的指示", "ko": "직원 및 구조대원의 안내를 따르세요", "tl": "Sundin ang mga tagubilin ng staff at mga rescuer", "vi": "Làm theo hướng dẫn của nhân viên và lực lượng cứu hộ", "ja": "スタッフと救助隊の指示に従ってください", "pt": "Siga as instruções da equipe e dos socorristas", "ru": "Следуйте указаниям персонала и спасателей" } },
+    "7": { "key": "AVOID_AREA", "text": { "en": "Avoid this area", "es": "Evite esta zona", "zh": "请避开该区域", "ko": "이 지역을 피하세요", "tl": "Iwasan ang lugar na ito", "vi": "Tránh khu vực này", "ja": "この地域に近づかないでください", "pt": "Evite esta área", "ru": "Избегайте этого района" } },
+    "8": { "key": "INDOORS_CLOSE_WINDOWS", "text": { "en": "Stay indoors and close windows", "es": "Permanezca adentro y cierre las ventanas", "zh": "请留在室内并关闭窗户", "ko": "실내에 머물고 창문을 닫으세요", "tl": "Manatili sa loob at isara ang mga bintana", "vi": "Ở trong nhà và đóng cửa sổ", "ja": "屋内にとどまり、窓を閉めてください", "pt": "Fique em ambiente fechado e feche as janelas", "ru": "Оставайтесь в помещении и закройте окна" } },
+    "9": { "key": "CHECK_NEIGHBORS", "text": { "en": "Check on neighbors who may need help", "es": "Revise si sus vecinos necesitan ayuda", "zh": "请查看邻居是否需要帮助", "ko": "도움이 필요한 이웃을 살펴보세요", "tl": "Kumustahin ang mga kapitbahay na maaaring nangangailangan ng tulong", "vi": "Hãy kiểm tra hàng xóm có thể cần giúp đỡ", "ja": "助けが必要な近所の方に声をかけてください", "pt": "Verifique se seus vizinhos precisam de ajuda", "ru": "Проверьте, не нужна ли помощь соседям" } },
+    "10": { "key": "TUNE_RADIO", "text": { "en": "Tune to KNX 1070 AM for updates", "es": "Sintonice KNX 1070 AM para más información", "zh": "请收听 KNX 1070 AM 获取最新消息", "ko": "최신 정보는 KNX 1070 AM을 들으세요", "tl": "Makinig sa KNX 1070 AM para sa mga update", "vi": "Nghe đài KNX 1070 AM để cập nhật", "ja": "最新情報は KNX 1070 AM でお聞きください", "pt": "Sintonize a KNX 1070 AM para atualizações", "ru": "Слушайте KNX 1070 AM для новостей" } },
+    "11": { "key": "NEXT_OPEN_GATE", "text": { "en": "Follow signs to the nearest open gate", "es": "Siga las señales hacia la puerta abierta más cercana", "zh": "请按指示牌前往最近的开放入口", "ko": "표지판을 따라 가장 가까운 개방 게이트로 이동하세요", "tl": "Sundan ang mga karatula papunta sa pinakamalapit na bukas na gate", "vi": "Đi theo biển chỉ dẫn đến cổng mở gần nhất", "ja": "案内表示に従って最寄りの開いているゲートへお進みください", "pt": "Siga as placas até o portão aberto mais próximo", "ru": "Следуйте указателям к ближайшему открытому входу" } },
+    "12": { "key": "BRING_ESSENTIALS", "text": { "en": "Take medications, documents and pets", "es": "Lleve sus medicamentos, documentos y mascotas", "zh": "请携带药品、证件和宠物", "ko": "약, 서류, 반려동물을 챙기세요", "tl": "Dalhin ang mga gamot, dokumento at alagang hayop", "vi": "Mang theo thuốc, giấy tờ và thú cưng", "ja": "薬、身分証明書類、ペットを持って行ってください", "pt": "Leve medicamentos, documentos e animais de estimação", "ru": "Возьмите лекарства, документы и домашних животных" } }
+  },
+  "ui": {
+    "start": { "en": "Start listening", "es": "Empezar a escuchar", "zh": "开始收听", "ko": "수신 시작", "tl": "Simulang makinig", "vi": "Bắt đầu nghe", "ja": "受信を開始", "pt": "Começar a ouvir", "ru": "Начать прослушивание" },
+    "listening": { "en": "Listening for alerts. Keep this screen open.", "es": "Escuchando alertas. Mantenga esta pantalla abierta.", "zh": "正在接收警报。请保持此屏幕打开。", "ko": "경보 수신 중입니다. 이 화면을 켜 두세요.", "tl": "Nakikinig ng mga alerto. Panatilihing bukas ang screen na ito.", "vi": "Đang nghe cảnh báo. Hãy giữ màn hình này mở.", "ja": "警報を受信中です。この画面を開いたままにしてください。", "pt": "Ouvindo alertas. Mantenha esta tela aberta.", "ru": "Приём оповещений. Не закрывайте этот экран." },
+    "area": { "en": "Area", "es": "Zona", "zh": "区域", "ko": "지역", "tl": "Lugar", "vi": "Khu vực", "ja": "地域", "pt": "Área", "ru": "Район" },
+    "verified": { "en": "Verified sender", "es": "Remitente verificado", "zh": "已验证发送方", "ko": "인증된 발신처", "tl": "Beripikadong nagpadala", "vi": "Người gửi đã xác minh", "ja": "認証済みの発信元", "pt": "Remetente verificado", "ru": "Проверенный отправитель" },
+    "unverified": { "en": "UNVERIFIED: not from a trusted agency. Do not act on this alone.", "es": "NO VERIFICADO: no proviene de una agencia confiable. No actúe solo con base en esto.", "zh": "未经验证：并非来自可信机构。请勿仅凭此信息采取行动。", "ko": "미인증: 신뢰할 수 있는 기관의 경보가 아닙니다. 이 메시지만 보고 행동하지 마세요.", "tl": "HINDI BERIPIKADO: hindi mula sa pinagkakatiwalaang ahensya. Huwag kumilos batay lamang dito.", "vi": "CHƯA XÁC MINH: không phải từ cơ quan đáng tin cậy. Đừng hành động chỉ dựa vào tin này.", "ja": "未認証：信頼できる機関からの警報ではありません。これだけを根拠に行動しないでください。", "pt": "NÃO VERIFICADO: não vem de uma agência confiável. Não aja apenas com base nisto.", "ru": "НЕ ПРОВЕРЕНО: не от доверенной службы. Не действуйте только на основании этого." },
+    "validUntil": { "en": "Valid until", "es": "Válido hasta", "zh": "有效期至", "ko": "유효 시간", "tl": "May bisa hanggang", "vi": "Có hiệu lực đến", "ja": "有効期限", "pt": "Válido até", "ru": "Действует до" },
+    "expired": { "en": "This alert has expired", "es": "Esta alerta ha vencido", "zh": "此警报已过期", "ko": "이 경보는 만료되었습니다", "tl": "Nag-expire na ang alertong ito", "vi": "Cảnh báo này đã hết hạn", "ja": "この警報は期限切れです", "pt": "Este alerta expirou", "ru": "Срок действия оповещения истёк" },
+    "needHelp": { "en": "I need help", "es": "Necesito ayuda", "zh": "我需要帮助", "ko": "도움이 필요합니다", "tl": "Kailangan ko ng tulong", "vi": "Tôi cần giúp đỡ", "ja": "助けが必要です", "pt": "Preciso de ajuda", "ru": "Мне нужна помощь" },
+    "helpQueued": { "en": "Help request saved. It will send as soon as any connection returns.", "es": "Solicitud de ayuda guardada. Se enviará en cuanto vuelva la conexión.", "zh": "求助请求已保存，一旦恢复连接将立即发送。", "ko": "도움 요청이 저장되었습니다. 연결이 복구되는 즉시 전송됩니다.", "tl": "Na-save ang hiling ng tulong. Ipapadala ito kapag bumalik ang koneksyon.", "vi": "Đã lưu yêu cầu giúp đỡ. Sẽ gửi ngay khi có kết nối trở lại.", "ja": "救助要請を保存しました。接続が回復し次第、送信されます。", "pt": "Pedido de ajuda salvo. Será enviado assim que a conexão voltar.", "ru": "Запрос о помощи сохранён. Он будет отправлен, как только появится связь." },
+    "helpSent": { "en": "Help request sent", "es": "Solicitud de ayuda enviada", "zh": "求助请求已发送", "ko": "도움 요청이 전송되었습니다", "tl": "Naipadala na ang hiling ng tulong", "vi": "Đã gửi yêu cầu giúp đỡ", "ja": "救助要請を送信しました", "pt": "Pedido de ajuda enviado", "ru": "Запрос о помощи отправлен" },
+    "callHelp": { "en": "Call for help in my language", "es": "Llamar para pedir ayuda en mi idioma", "zh": "用我的语言拨打求助电话", "ko": "내 언어로 도움 요청 전화하기", "tl": "Tumawag para sa tulong sa aking wika", "vi": "Gọi trợ giúp bằng ngôn ngữ của tôi", "ja": "自分の言語で助けを求める電話をかける", "pt": "Ligar pedindo ajuda no meu idioma", "ru": "Позвонить за помощью на моём языке" },
+    "earlier": { "en": "Earlier alerts", "es": "Alertas anteriores", "zh": "之前的警报", "ko": "이전 경보", "tl": "Mga naunang alerto", "vi": "Cảnh báo trước đó", "ja": "以前の警報", "pt": "Alertas anteriores", "ru": "Предыдущие оповещения" },
+    "noAlerts": { "en": "No alerts yet", "es": "Aún no hay alertas", "zh": "暂无警报", "ko": "아직 경보가 없습니다", "tl": "Wala pang alerto", "vi": "Chưa có cảnh báo", "ja": "警報はまだありません", "pt": "Nenhum alerta ainda", "ru": "Оповещений пока нет" }
+  }
+}

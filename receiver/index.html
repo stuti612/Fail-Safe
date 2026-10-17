@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#c4161c">
+  <title>CHIRP</title>
+  <link rel="manifest" href="../manifest.webmanifest">
+  <link rel="icon" href="../icon.svg">
+  <link rel="stylesheet" href="../shared/style.css">
+</head>
+<body>
+  <main>
+    <div class="row" style="align-items:center">
+      <div>
+        <h1>CHIRP</h1>
+        <div class="muted small" id="net"></div>
+      </div>
+      <select id="lang" aria-label="Language" style="flex:0 0 160px"></select>
+    </div>
+
+    <div class="card">
+      <button class="big" id="start"></button>
+      <div id="listening" class="hidden">
+        <div id="listening-text"></div>
+        <div class="level"><div id="level"></div></div>
+      </div>
+    </div>
+
+    <div id="current"></div>
+
+    <div id="actions" class="hidden">
+      <div class="row">
+        <button class="danger" id="help"></button>
+        <a id="call" class="hidden"><button class="secondary" style="width:100%"></button></a>
+      </div>
+      <p class="muted small" id="help-status"></p>
+    </div>
+
+    <h2 id="earlier"></h2>
+    <div id="history" class="card"></div>
+
+    <div id="debug" class="card hidden">
+      <label for="paste">Debug: paste a wire string</label>
+      <textarea id="paste" rows="3"></textarea>
+      <button class="secondary" id="paste-go" style="margin-top:8px">Decode</button>
+    </div>
+  </main>
+
+  <script src="../vendor/ggwave.js"></script>
+  <script src="../vendor/nacl-fast.min.js"></script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

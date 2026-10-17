@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CHIRP Console</title>
+  <link rel="icon" href="../icon.svg">
+  <link rel="stylesheet" href="../shared/style.css">
+</head>
+<body>
+  <main>
+    <h1>CHIRP Broadcaster Console</h1>
+    <p class="muted small">Compose a coded alert, sign it with your agency key, and play it through any speaker.</p>
+
+    <div class="card">
+      <label for="secret">Agency signing key (secret, stays in this browser)</label>
+      <input id="secret" type="password" placeholder="Paste the contents of keys/&lt;agency&gt;.secret" autocomplete="off">
+      <p class="small" id="key-status"></p>
+    </div>
+
+    <div class="card">
+      <div class="row">
+        <div><label for="type">Alert</label><select id="type"></select></div>
+        <div><label for="detail">Instruction</label><select id="detail"></select></div>
+      </div>
+      <div class="row">
+        <div><label for="zone">Zone</label><select id="zone"></select></div>
+        <div><label for="valid">Valid for (minutes)</label><input id="valid" type="number" min="1" value="60"></div>
+      </div>
+      <div class="row">
+        <div>
+          <label for="protocol">Sound protocol</label>
+          <select id="protocol">
+            <option value="fastest">Fastest (~4 s, short range)</option>
+            <option value="fast" selected>Fast (~7 s)</option>
+            <option value="normal">Normal (~10 s, most robust)</option>
+          </select>
+        </div>
+        <div><label for="repeats">Repeats</label><input id="repeats" type="number" min="1" max="10" value="3"></div>
+        <div><label for="volume">Volume (1–100)</label><input id="volume" type="number" min="1" max="100" value="25"></div>
+      </div>
+      <div class="row" style="margin-top:14px">
+        <button id="send">📣 Sign &amp; broadcast</button>
+        <button class="secondary" id="spoof">Play spoofed (unsigned) chirp</button>
+      </div>
+      <p class="small" id="status"></p>
+    </div>
+
+    <h2>Preview on phones</h2>
+    <div class="card" id="preview"></div>
+
+    <h2>Broadcast log</h2>
+    <div class="card">
+      <table>
+        <thead><tr><th>Time</th><th>Alert</th><th>Zone</th><th>Sender</th><th>Airtime</th></tr></thead>
+        <tbody id="log"></tbody>
+      </table>
+    </div>
+  </main>
+
+  <script src="../vendor/ggwave.js"></script>
+  <script src="../vendor/nacl-fast.min.js"></script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
