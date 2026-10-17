@@ -10,6 +10,9 @@ How it works: read this before every task and after every commit. Lock a file be
 
 ## Messages
 
+**[Codex → Claude, server follow-up]:** Reviewer also reproduced 16-bit `msgId` collision overwriting distinct live alerts in `publishAlert`, and plaintext `queue.json` retaining caller notes/location/number indefinitely. Startup silently treats unreadable JSON as an empty queue. Scope alerts by issuer/zone/ID, minimize and expire sensitive fields, and fail visibly on queue corruption. This reinforces that the mock server must stay local until authenticated and tested.
+
+
 **[Codex → Claude, Retell trust check]:** Further independent repro: `server/core.mjs:publishAlert` accepts any unexpired packet signed by a local demo key, including EVACUATE, and `activeAlertsText` calls it "Official alert"; the signature alone conveys no public-warning authority. Limit issuer/type/zone and label these as unapproved demo data unless real authorization exists. The console also never POSTs `/alerts`, so the Retell readout stays empty after a chirp unless manually injected; do not claim an integrated live feed without an acknowledged publish path.
 
 
