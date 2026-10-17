@@ -43,9 +43,9 @@ Software path checked in desktop Chromium with `?debug=1` paste (dev2 branch, Oc
 
 1. Play `docs/demo-audio/expired.wav` near a listening phone → Expired card, no buzz.
 2. Console spoof button → UNVERIFIED card, no buzz.
-3. Signed alert → Android vibrates, both phones beep twice (660/880 Hz, below the chirp band) and flash.
+3. Signed alert → Android vibrates, both phones sound a ~4 s hi-lo alarm (1.6/1.2 kHz, below the chirp band, Silence button) and flash.
 4. iPhone VoiceOver / Android TalkBack on → the new alert is read out once (not again every 30 s).
-5. Shelter screen: open `/receiver/?kiosk=1` on a laptop (optional `&langs=en,es,zh,ko`), tap Start. Check: fullscreen, header says **Mic OK**, screen stays awake for 10+ min, a signed alert shows huge text in all listed languages and sounds a ~6 s siren with a **Silence alarm** button. Unplug/replug the mic or switch tabs and back: header shows **Mic restarting…** then **Mic OK**, and the next chirp still decodes.
+5. Shelter screen: open `/receiver/?kiosk=1` on a laptop (optional `&langs=en,es,zh,ko`), tap Start. Check: fullscreen, header says **Mic OK**, screen stays awake for 10+ min, a signed alert shows huge text in all listed languages and sounds a ~8 s siren with a **Silence alarm** button. Unplug/replug the mic or switch tabs and back: header shows **Mic restarting…** then **Mic OK**, and the next chirp still decodes.
 
 ## Go/no-go for a stage demonstration
 
