@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 
 const handlers = {};
-const entries = new Map([['chirp-v8', new Map()], ['chirp-v9', new Map()]]);
+const entries = new Map([['chirp-v8', new Map()], ['chirp-v9', new Map()], ['chirp-v10', new Map()]]);
 const puts = [];
 const caches = {
   keys: async () => [...entries.keys()],
@@ -47,4 +47,5 @@ assert.deepEqual(puts, ['https://example.test/chirp/receiver/?strict=1', 'https:
 await new Promise((resolve) => handlers.activate({ waitUntil: (promise) => promise.then(resolve) }));
 assert.equal(entries.has('chirp-v8'), false, 'old cache with API responses must be deleted');
 assert.equal(entries.has('chirp-v9'), false, 'previous app cache must be deleted');
+assert.equal(entries.has('chirp-v10'), false, 'previous app cache must be deleted');
 console.log('PASS service worker caches only static app files and removes old API cache');

@@ -2,11 +2,13 @@
 // alert to a WAV, feeds it to headless Chromium as the microphone, and checks that the
 // range page logs 3/3 and the receiver shows the verified alert.
 //   python3 -m http.server 8765 &   npm i --no-save playwright   node scripts/mic-loopback.mjs
+// Set CHIRP_TEST_ORIGIN to use a different local port.
 import { createRequire } from 'node:module';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { chromium } from 'playwright';
 const R = new URL('..', import.meta.url).pathname;
+const ORIGIN = process.env.CHIRP_TEST_ORIGIN || 'http://localhost:8765';
 const require = createRequire(import.meta.url);
 globalThis.nacl = require(R + 'vendor/nacl-fast.min.js');
 const { packBody, toWire, nowMinutes } = await import(R + 'shared/payload.js');
@@ -36,9 +38,9 @@ const b = await chromium.launch({ args: ['--use-fake-ui-for-media-stream', '--us
 const ctx = await b.newContext({ permissions: ['microphone'] });
 const errs = [];
 const range = await ctx.newPage(); range.on('pageerror', (e) => errs.push(e.message));
-await range.goto('http://localhost:8765/range/'); await range.fill('#sent', '3'); await range.fill('#distance', '0'); await range.click('#listen');
+await range.goto(`${ORIGIN}/range/`); await range.fill('#sent', '3'); await range.fill('#distance', '0'); await range.click('#listen');
 const rx = await ctx.newPage(); rx.on('pageerror', (e) => errs.push(e.message));
-await rx.goto('http://localhost:8765/receiver/'); await rx.waitForTimeout(500); await rx.click('#start');
+await rx.goto(`${ORIGIN}/receiver/`); await rx.waitForTimeout(500); await rx.click('#start');
 await range.waitForTimeout(40000);
 const runs = await range.innerText('#runs'), cur = await rx.innerText('#current');
 console.log('range:', runs.replace(/\t/g, ' | '));

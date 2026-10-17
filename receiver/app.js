@@ -5,7 +5,7 @@ import { nowMinutes } from '../shared/payload.js';
 import { loadPhrasebook, languages, pickDefaultLanguage, ui, describe, allZones } from '../shared/phrasebook.js';
 import { RETELL_PHONE, HELP_ENDPOINT, STRICT_DEMO } from '../shared/config.js';
 import { verifiedDemoWire } from '../shared/demo-policy.js';
-import { receiveChirp, outsideZone, distanceKm } from '../shared/receive.js';
+import { receiveChirp, outsideZone } from '../shared/receive.js';
 import { encodeHelp, NEEDS } from '../shared/help.js';
 
 const $ = (id) => document.getElementById(id);
@@ -47,7 +47,7 @@ $('lang').onchange = () => {
 let pos = null;
 function locate() {
   navigator.geolocation?.getCurrentPosition(
-    (p) => { pos = { lat: p.coords.latitude, lon: p.coords.longitude, accuracy: p.coords.accuracy }; render(); },
+    (p) => { pos = { lat: p.coords.latitude, lon: p.coords.longitude }; render(); },
     () => {}, { maximumAge: 600000, timeout: 10000, enableHighAccuracy: false });
 }
 if (!STRICT_DEMO) navigator.permissions?.query({ name: 'geolocation' }).then((s) => s.state === 'granted' && locate()).catch(() => {});
@@ -96,10 +96,10 @@ function onChirp(text) {
   history = history.slice(0, 30);
   store.set('chirp.history', history);
   // HOLD rung: only verified alerts may buzz the phone.
-  const zone = allZones()[entry.alert.zone];
-  const near = pos && zone && Number.isFinite(pos.accuracy) && Number.isFinite(zone.radiusKm)
-    && distanceKm(zone, pos) + pos.accuracy / 1000 <= zone.radiusKm;
-  if (!STRICT_DEMO && entry.sender && near && navigator.vibrate) navigator.vibrate([400, 150, 400]);
+  // Hearing the chirp is local evidence. Suppress vibration only when GPS
+  // positively places the phone outside the target area; no fix is common indoors.
+  const away = outsideZone(allZones()[entry.alert.zone], pos) === true;
+  if (!STRICT_DEMO && entry.sender && !away && navigator.vibrate) navigator.vibrate([400, 150, 400]);
   render();
 }
 
