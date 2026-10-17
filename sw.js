@@ -1,6 +1,6 @@
 // Caches the whole app so the receiver keeps working with no network.
 // Bump VERSION whenever any cached file changes.
-const VERSION = 'chirp-v8';
+const VERSION = 'chirp-v9';
 const FILES = [
   './',
   './index.html',
@@ -35,6 +35,7 @@ const FILES = [
   './vendor/ggwave.js',
   './vendor/nacl-fast.min.js',
 ];
+const APP_PATHS = new Set(FILES.map((file) => new URL(file, self.registration.scope).pathname));
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(VERSION).then((c) => c.addAll(FILES)).then(() => self.skipWaiting()));
@@ -48,14 +49,19 @@ self.addEventListener('activate', (e) => {
   );
 });
 
-// Network first (so updates land during the hackathon), cache when offline.
+// Only cache the static app shell. Help queues and authenticated responses may
+// contain resident details and must never enter Cache Storage.
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
+  const url = new URL(e.request.url);
+  if (url.origin !== self.location.origin || !APP_PATHS.has(url.pathname) || e.request.headers.has('Authorization')) return;
   e.respondWith(
     fetch(e.request)
       .then((res) => {
-        const copy = res.clone();
-        caches.open(VERSION).then((c) => c.put(e.request, copy));
+        if (res.ok && res.type === 'basic') {
+          const copy = res.clone();
+          caches.open(VERSION).then((c) => c.put(e.request, copy));
+        }
         return res;
       })
       .catch(() => caches.match(e.request, { ignoreSearch: true })),

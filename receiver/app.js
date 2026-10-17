@@ -5,7 +5,7 @@ import { nowMinutes } from '../shared/payload.js';
 import { loadPhrasebook, languages, pickDefaultLanguage, ui, describe, allZones } from '../shared/phrasebook.js';
 import { RETELL_PHONE, HELP_ENDPOINT, STRICT_DEMO } from '../shared/config.js';
 import { verifiedDemoWire } from '../shared/demo-policy.js';
-import { receiveChirp, outsideZone } from '../shared/receive.js';
+import { receiveChirp, outsideZone, distanceKm } from '../shared/receive.js';
 import { encodeHelp, NEEDS } from '../shared/help.js';
 
 const $ = (id) => document.getElementById(id);
@@ -15,6 +15,7 @@ const store = {
 };
 
 await loadPhrasebook();
+const MAX_VALID_MIN = 12 * 60; // Keep in sync with the console's CAP validity cap.
 const LANGS = Object.keys(languages()).filter((c) => !STRICT_DEMO || ['en', 'es'].includes(c));
 let lang = store.get('chirp.lang', null) || pickDefaultLanguage();
 if (!LANGS.includes(lang)) lang = 'en';
@@ -26,7 +27,7 @@ const restore = (h) => {
   const at = Number.isFinite(h.at) ? h.at : Date.now();
   if (STRICT_DEMO) { const v = verifiedDemoWire(h.wire, nowMinutes()); return v && { ...v, at }; }
   const r = receiveChirp(h.wire, 0); // 0: keep expired ones in history (shown as expired)
-  return r.status === 'ok' ? { ...r.entry, key: r.key, at } : null;
+  return r.status === 'ok' && r.entry.alert.expiresMin <= nowMinutes() + MAX_VALID_MIN ? { ...r.entry, key: r.key, at } : null;
 };
 const saved = store.get('chirp.history', []);
 let history = (Array.isArray(saved) ? saved : []).map(restore).filter(Boolean).slice(0, 30);
@@ -46,7 +47,7 @@ $('lang').onchange = () => {
 let pos = null;
 function locate() {
   navigator.geolocation?.getCurrentPosition(
-    (p) => { pos = { lat: p.coords.latitude, lon: p.coords.longitude }; render(); },
+    (p) => { pos = { lat: p.coords.latitude, lon: p.coords.longitude, accuracy: p.coords.accuracy }; render(); },
     () => {}, { maximumAge: 600000, timeout: 10000, enableHighAccuracy: false });
 }
 if (!STRICT_DEMO) navigator.permissions?.query({ name: 'geolocation' }).then((s) => s.state === 'granted' && locate()).catch(() => {});
@@ -87,14 +88,18 @@ function onChirp(text) {
     const r = receiveChirp(text, nowMinutes(), seen);
     if (r.status !== 'ok') return console.warn(`ignored ${r.status} chirp`);
     entry = { ...r.entry, key: r.key };
-    seen.add(r.key);
   }
+  if (entry.alert.expiresMin > nowMinutes() + MAX_VALID_MIN) return console.warn('ignored excessive alert validity');
+  if (entry.key) seen.add(entry.key);
   seen.add(text);
   history.unshift({ ...entry, at: Date.now() });
   history = history.slice(0, 30);
   store.set('chirp.history', history);
   // HOLD rung: only verified alerts may buzz the phone.
-  if (entry.sender && navigator.vibrate) navigator.vibrate([400, 150, 400]);
+  const zone = allZones()[entry.alert.zone];
+  const near = pos && zone && Number.isFinite(pos.accuracy) && Number.isFinite(zone.radiusKm)
+    && distanceKm(zone, pos) + pos.accuracy / 1000 <= zone.radiusKm;
+  if (!STRICT_DEMO && entry.sender && near && navigator.vibrate) navigator.vibrate([400, 150, 400]);
   render();
 }
 
@@ -123,7 +128,7 @@ function alertCard(entry, { large }) {
   el.querySelector('.meta').textContent = [expired ? ui('expired', lang) : `${ui('validUntil', lang)} ${until}`, signer].filter(Boolean).join(' · ');
   el.querySelector('.warn').textContent = STRICT_DEMO
     ? (lang === 'es' ? 'SOLO PRUEBA. No actúe según esta demostración; consulte al personal del lugar.' : 'TEST ONLY. Do not act on this demo; ask venue staff.')
-    : entry.sender ? '' : `⚠ ${ui('unverified', lang)}`;
+    : entry.sender ? ui('testWarning', lang) : `⚠ ${ui('unverified', lang)}`;
   if (!large) el.querySelector('.detail').style.fontSize = '1rem';
   return el;
 }
@@ -158,6 +163,7 @@ function render() {
 // ---- "I need help" (ASK): reply chirp to any console in earshot + POST when online ----
 let outbox = store.get('chirp.outbox', []).filter((r) => typeof r === 'object');
 let lastHelp = '';
+let flushing = false;
 
 $('help').onclick = () => {
   if (STRICT_DEMO) { // local note only
@@ -203,19 +209,24 @@ $('help-send').onclick = async () => {
 };
 
 async function flushOutbox() {
-  if (STRICT_DEMO || !HELP_ENDPOINT || !navigator.onLine || !outbox.length) return;
-  for (const req of [...outbox]) {
-    try {
-      const res = await fetch(HELP_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(req) });
-      if (!res.ok) break;
-      outbox = outbox.filter((r) => r !== req);
-      store.set('chirp.outbox', outbox);
-      lastHelp = ui('helpDelivered', lang);
-    } catch {
-      break;
+  if (flushing || STRICT_DEMO || !HELP_ENDPOINT || !navigator.onLine || !outbox.length) return;
+  flushing = true;
+  try {
+    for (const req of [...outbox]) {
+      try {
+        const res = await fetch(HELP_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(req) });
+        if (!res.ok) break;
+        outbox = outbox.filter((r) => r !== req);
+        store.set('chirp.outbox', outbox);
+        lastHelp = ui('helpDelivered', lang);
+      } catch {
+        break;
+      }
     }
+  } finally {
+    flushing = false;
+    renderHelpStatus();
   }
-  renderHelpStatus();
 }
 
 function renderHelpStatus() {
@@ -224,6 +235,9 @@ function renderHelpStatus() {
 }
 
 window.addEventListener('online', flushOutbox);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) flushOutbox(); });
+setInterval(flushOutbox, 30000);
+flushOutbox();
 
 if (RETELL_PHONE) {
   $('call').href = `tel:${RETELL_PHONE}`;

@@ -1,26 +1,28 @@
-# CHIRP: TEST Venue Advisory by Sound
+# CHIRP: audible, signed resilience demo
 
-CHIRP is a prototype for sending a signed **TEST** gate advisory through audible sound. A prepared phone must have the page cached, microphone permission granted, and the receiver open and listening. The current build has no agency or venue authority, no verified public-warning use, and no measured venue reach.
+CHIRP is a **hackathon prototype** that turns a short signed code into an audible chirp. A prepared phone with the receiver page open and microphone permission can decode it offline and display fixed phrasebook text in its chosen language. The signing keys in this repo are **local demo keys**. A valid signature proves only that a matching demo key signed the code; it does not prove that a CAP file came from an agency or that an alert has public-warning authority. Do not use CHIRP for real emergency instructions.
 
-Built at the InnovateLA x Dual-Use Hackathon (Resilience Comms lens).
+Built for the InnovateLA x Dual-Use Hackathon, with a crisis response scenario and an ordinary event-operations scenario in Los Angeles. See `docs/PROPOSAL_REVIEW.md` for the scope and `docs/TWIST1_VERIFIED.md` for the federal funding pathway.
 
-## How it works
+## Current modes
 
-1. The **console** signs one hypothetical Gate C TEST scenario with a local demo key. It does not offer evacuation or all-clear commands. Its CAP parser is preview-only and cannot broadcast.
-2. The 100-character code can be encoded as an audible chirp. The Node self-test verifies only an in-memory waveform round trip; a physical speaker-to-phone test is still required.
-3. A prepared, actively listening **receiver** accepts only the signed in-scope TEST code, shows it as a simulation, and ignores forged, expired and out-of-scope packets. This build displays English and unreviewed Spanish. Its help note stays on the phone and is **not delivered**.
+- **Full feature demo (default):** The console can compose alerts or map pasted CAP XML to fixed phrasebook codes, sign with a local demo key, play chirps, and optionally use on-device speech. The receiver shows signed alerts and unsigned chirps with different labels, records history, and has a help-request chirp. The optional local server stores a demo help queue and exposes Retell endpoints. CAP input is not authenticated. The receiver labels every signed alert **TEST ONLY**; no real warning authority is implied.
+- **Strict demo (`?strict=1` on both console and receiver):** One Gate C TEST scenario, one-minute validity, English and unreviewed Spanish, and CAP preview only. Help stays as a local note. Use this when showing a controlled first-submission demonstration.
 
-## Run it
+The receiver must already be open and listening. Node tests measure a waveform loopback (3.75 seconds FASTEST; 6.83 seconds FAST), not physical speaker-to-phone delivery. A real two-phone acoustic test, offline test, native-speaker review, staffed help queue, and live Retell call remain unverified. `shared/config.js` has no help endpoint or Retell number by default, so the app must say **NOT DELIVERED** for a request that has not reached a configured server.
+
+## Run locally
 
 ```bash
-node scripts/genkeys.mjs      # create demo signing keys (keys/ is gitignored)
-node scripts/selftest.mjs     # end-to-end check without a browser
-node scripts/test-demo-policy.mjs  # signed TEST policy checks
-python3 -m http.server 8000   # open http://localhost:8000
+node scripts/genkeys.mjs
+node scripts/selftest.mjs
+node scripts/test-demo-policy.mjs
+node scripts/server-safety.mjs
+python3 -m http.server 8000
 ```
 
-Phones need a tested HTTPS origin for microphone permission. Do not publish the app as a safety service. See `docs/PROPOSAL_REVIEW.md` for the operational and physical test gates.
+Open `/console/` and `/receiver/` from the local server. Phones require a tested HTTPS origin for microphone access. Keep the mock help server on localhost until access control, retention, live staffing, and end-to-end operation are verified. `docs/DEVICE_TEST.md` has the real-device protocol.
 
 ## Built with
 
-[ggwave](https://github.com/ggerganov/ggwave) (data-over-sound), [TweetNaCl.js](https://github.com/dchest/tweetnacl-js) (Ed25519), and coding assistants. Retell and IBM Bob use must be reported only if actually implemented.
+[ggwave](https://github.com/ggerganov/ggwave) for data over sound and [TweetNaCl.js](https://github.com/dchest/tweetnacl-js) for Ed25519 signatures. AI tools used in the build and any Retell or IBM Bob use must be reported accurately in the submission.
