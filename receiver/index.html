@@ -2,55 +2,67 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#c4161c">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b0b0d">
   <title>CHIRP</title>
   <link rel="manifest" href="../manifest.webmanifest">
   <link rel="icon" href="../icon.svg">
   <link rel="stylesheet" href="../shared/style.css">
 </head>
-<body>
+<body class="rx">
+  <div id="flash" aria-hidden="true"></div>
+  <div id="announce" class="sr-only" role="alert" aria-live="assertive" aria-atomic="true"></div>
   <main>
-    <div class="row" style="align-items:center">
-      <div>
-        <h1>CHIRP</h1>
-        <div class="muted small" id="net"></div>
+    <header class="rx-top">
+      <div class="rx-brand">
+        <span class="rx-mark" aria-hidden="true"></span>
+        <span class="rx-word">CHIRP</span>
       </div>
-      <select id="lang" aria-label="Language" style="flex:0 0 160px"></select>
-    </div>
-    <p class="card small">Hackathon prototype with demo keys; translations are machine-drafted and unreviewed. Always follow official instructions and on-site staff.</p>
-    <p class="card hidden" id="strict-banner">TEST ONLY · Simulated venue message. No agency or venue has authorized this app for real directions. Ask on-site staff.<br>SOLO PRUEBA · Mensaje simulado. Ninguna autoridad ha autorizado esta app para dar instrucciones reales. Consulte al personal del lugar. Traducción sin revisión profesional.</p>
+      <div class="rx-status">
+        <span class="pill" id="net-pill"><span class="dot"></span><span id="net"></span></span>
+        <span class="pill hidden" id="mic-pill"><span class="dot"></span><span id="mic"></span></span>
+        <span class="rx-clock" id="clock"></span>
+      </div>
+      <select id="lang" aria-label="Language"></select>
+    </header>
 
-    <div class="card">
-      <button class="big" id="start"></button>
+    <p class="rx-note">Hackathon prototype with demo keys; translations are machine-drafted and unreviewed. Always follow official instructions and on-site staff.</p>
+    <p class="rx-banner hidden" id="strict-banner">TEST ONLY · Simulated venue message. No agency or venue has authorized this app for real directions. Ask on-site staff.<br>SOLO PRUEBA · Mensaje simulado. Ninguna autoridad ha autorizado esta app para dar instrucciones reales. Consulte al personal del lugar. Traducción sin revisión profesional.</p>
+
+    <section class="rx-listen">
+      <button class="big primary" id="start"></button>
       <div id="listening" class="hidden">
-        <div id="listening-text"></div>
-        <div class="level"><div id="level"></div></div>
+        <div class="rx-listening">
+          <span class="pulse" aria-hidden="true"></span>
+          <span id="listening-text"></span>
+        </div>
+        <div class="level" aria-hidden="true"><div id="level"></div></div>
       </div>
-    </div>
+    </section>
 
+    <button class="big danger hidden" id="silence">Silence alarm</button>
     <div id="current"></div>
 
-    <div id="actions">
-      <div class="row">
-        <button class="danger" id="help"></button>
-        <a id="call" class="hidden"><button class="secondary" style="width:100%"></button></a>
+    <section id="actions">
+      <div class="rx-actions">
+        <button class="outline-danger" id="help"></button>
+        <a id="call" class="hidden"><button class="secondary"></button></a>
       </div>
       <div id="help-form" class="card hidden">
         <div class="row">
           <div><label for="need" id="need-label"></label><select id="need"></select></div>
           <div><label for="people" id="people-label"></label><input id="people" type="number" min="1" max="255" value="1"></div>
         </div>
-        <label><input type="checkbox" id="life" style="width:auto"> <span id="life-label"></span></label>
-        <label><input type="checkbox" id="vuln" style="width:auto"> <span id="vuln-label"></span></label>
-        <p class="hidden" id="call911" style="font-weight:700"></p>
-        <button class="danger" id="help-send" style="margin-top:10px"></button>
+        <label class="check"><input type="checkbox" id="life"> <span id="life-label"></span></label>
+        <label class="check"><input type="checkbox" id="vuln"> <span id="vuln-label"></span></label>
+        <p class="rx-911 hidden" id="call911"></p>
+        <button class="danger big" id="help-send"></button>
       </div>
       <p class="muted small" id="help-status"></p>
-    </div>
+    </section>
 
-    <h2 id="earlier"></h2>
-    <div id="history" class="card"></div>
+    <h2 class="rx-label" id="earlier"></h2>
+    <div id="history" class="rx-history"></div>
 
     <div id="debug" class="card hidden">
       <label for="paste">Debug: paste a wire string</label>
