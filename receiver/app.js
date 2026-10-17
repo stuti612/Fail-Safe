@@ -149,9 +149,7 @@ function onChirp(text) {
   // positively places the phone outside the target area; no fix is common indoors.
   const away = outsideZone(allZones()[entry.alert.zone], pos) === true;
   if (!STRICT_DEMO && entry.sender && !entry.late && !away) {
-    navigator.vibrate?.([400, 150, 400]);
-    alarm(KIOSK);
-    flash();
+    alarm(KIOSK); // rings, flashes and vibrates until Silence (or a time cap)
   }
   render();
   announce(entry);
@@ -215,43 +213,58 @@ function announce(entry) {
   setTimeout(() => { box.textContent = [badge(entry).text, d.zone, d.title, d.detail].filter(Boolean).join('. '); }, 50);
 }
 
-// ---- Tone and flash (verified alerts only) ----
-// Tones stay below ggwave's audible band (~1.9 kHz+) so they don't mask a repeat chirp.
+// ---- Alarm: ringtone, flash and vibration (verified alerts only) ----
 // Played through audio.js's one context: iOS Safari mutes a second AudioContext while the mic is open.
-function tone(freq, seconds, amp) {
+// One ring cycle, like a phone ringtone: two "brrring" trills, then a pause (~2.4 s).
+// The trill alternates 1.6/1.25 kHz every 40 ms: loud on small speakers, below ggwave's band.
+let ringCache;
+function ringCycle() {
   const rate = Math.round(1 / durationOf(new Float32Array(1)));
-  const n = Math.round(rate * seconds);
-  const fade = Math.min(n / 2, Math.round(rate * 0.01)); // 10 ms ramps, no clicks
-  const out = new Float32Array(n);
-  for (let i = 0; i < n; i++) {
-    const s = Math.sin((2 * Math.PI * freq * i) / rate);
-    out[i] = amp * s * Math.min(1, i / fade, (n - 1 - i) / fade); // pure sine: no harmonics in the chirp band
+  if (ringCache?.rate === rate) return ringCache.samples;
+  const parts = [[0.8, true], [0.2, false], [0.8, true], [0.6, false]];
+  const out = new Float32Array(Math.round(rate * parts.reduce((t, [sec]) => t + sec, 0)));
+  const fade = Math.round(rate * 0.01); // 10 ms ramps, no clicks
+  let at = 0, phase = 0;
+  for (const [sec, on] of parts) {
+    const n = Math.round(rate * sec);
+    for (let i = 0; i < n; i++) {
+      const freq = Math.floor(i / (rate * 0.04)) % 2 ? 1250 : 1600;
+      phase += (2 * Math.PI * freq) / rate; // continuous phase across the trill
+      out[at + i] = on ? Math.sin(phase) * Math.min(1, i / fade, (n - 1 - i) / fade) : 0;
+    }
+    at += n;
   }
+  ringCache = { rate, samples: out };
   return out;
 }
 
+// Rings until Silence is tapped, a newer alert arrives, or the cap is reached
+// (30 s phone, 60 s shelter screen), so a forgotten phone doesn't ring forever.
 let alarmRun = 0;
 async function alarm(loud) {
-  if (!listening) return;
-  const run = ++alarmRun; // a newer alarm, or Silence, stops this one
-  // Hi-lo siren at full volume. 1.6/1.2 kHz is where small phone speakers are loudest,
-  // and still below ggwave's band. Phone ~4 s, shelter screen ~8 s; Silence stops either.
-  const beeps = loud ? 20 : 10;
-  const steps = Array.from({ length: beeps }, (_, i) => [i % 2 ? 1200 : 1600, 0.32, 1]).flatMap((s) => [s, [0, 0.08, 0]]);
+  const run = ++alarmRun;
+  const until = Date.now() + (loud ? 60000 : 30000);
   $('silence').classList.remove('hidden');
   try {
-    await initAudio(); // resumes the context if iOS suspended it
-    for (const [freq, sec, amp] of steps) {
-      if (run !== alarmRun) break;
-      await play(freq ? tone(freq, sec, amp) : new Float32Array(Math.round(sec / durationOf(new Float32Array(1)))));
+    if (listening) await initAudio(); // resumes the context if iOS suspended it
+    while (run === alarmRun && Date.now() < until) {
+      flash();
+      navigator.vibrate?.([800, 200, 800]);
+      if (listening) await play(ringCycle());
+      else await new Promise((r) => setTimeout(r, 2400)); // no audio yet (debug paste): flash only
     }
   } catch (err) {
-    console.warn('alarm tone failed', err);
+    console.warn('alarm failed', err);
   } finally {
     if (run === alarmRun) $('silence').classList.add('hidden');
   }
 }
-$('silence').onclick = () => { alarmRun++; $('silence').classList.add('hidden'); };
+function silence() {
+  alarmRun++;
+  navigator.vibrate?.(0);
+  $('silence').classList.add('hidden');
+}
+$('silence').onclick = silence;
 
 function flash() {
   const f = $('flash');
