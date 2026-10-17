@@ -9,6 +9,7 @@ import { parseCap, MAX_VALID_MIN } from './cap.js';
 import { speakAlert } from './speak.js';
 import { waitSeconds, isWide, slowKey } from './slow.js';
 import { startHelpQueue, publishToServer } from './helpqueue.js';
+import { makePattern } from '../range/pattern.js';
 
 const $ = (id) => document.getElementById(id);
 const store = {
@@ -237,5 +238,27 @@ function logRow(alert, sender, airtime) {
   $('log').prepend(tr);
   return tr.lastChild;
 }
+
+// ---- Range test: N numbered patterns, 1 s apart ----
+$('pattern-send').onclick = async () => {
+  if (busy) return;
+  busy = true;
+  const run = (store.get('chirp.console.run', 0) + 1) % 256;
+  store.set('chirp.console.run', run);
+  const n = Math.min(50, Math.max(1, Number($('pattern-n').value) || 10));
+  try {
+    await initAudio();
+    for (let seq = 1; seq <= n; seq++) {
+      $('pattern-status').textContent = `Run ${run}: pattern ${seq}/${n} (${$('protocol').value})`;
+      await play(encode(makePattern(run, seq), $('protocol').value, Number($('volume').value) || 25));
+      await new Promise((r) => setTimeout(r, 1000));
+    }
+    $('pattern-status').textContent = `Run ${run} done: ${n} patterns sent. Set "Patterns sent per run" to ${n} on the phones.`;
+  } catch (err) {
+    $('pattern-status').textContent = `Error: ${err.message}`;
+  } finally {
+    busy = false;
+  }
+};
 
 startHelpQueue({ listEl: $('help-list'), statusEl: $('help-count'), listenBtn: $('help-listen'), store });

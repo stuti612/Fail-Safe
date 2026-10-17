@@ -70,6 +70,16 @@
     <h2>Preview on phones</h2>
     <div class="card" id="preview"></div>
 
+    <h2>Range test</h2>
+    <div class="card">
+      <p class="small muted">Plays numbered test patterns (same 100-char size as a real alert, unsigned, marked TEST) with the protocol and volume above. Phones log them on <a href="../range/">the range page</a>.</p>
+      <div class="row">
+        <div><label for="pattern-n">Patterns per run</label><input id="pattern-n" type="number" min="1" max="50" value="10"></div>
+        <div><label>&nbsp;</label><button class="secondary" id="pattern-send">📶 Send test pattern</button></div>
+      </div>
+      <p class="small" id="pattern-status"></p>
+    </div>
+
     <h2>Help queue <span class="small muted" id="help-count"></span></h2>
     <div class="card">
       <p class="small muted">Resident requests are unsigned: every one is an unverified report, ranked life threat → vulnerable → oldest. Only a named person can close one. Life threat: call 911 / dispatch a person.</p>

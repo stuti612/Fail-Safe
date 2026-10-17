@@ -203,6 +203,15 @@ const goodSig = `v=${ts},d=${createHmac('sha256', 'k').update(sigBody + ts).dige
 check('Retell signature verifies', srv.verifyRetell(sigBody, goodSig, 'k'));
 check('Retell signature rejects tampering / wrong key / stale', !srv.verifyRetell(sigBody + ' ', goodSig, 'k') && !srv.verifyRetell(sigBody, goodSig, 'x') && !srv.verifyRetell(sigBody, goodSig, 'k', Date.now() + 6 * 60_000));
 
+// ---- Range test pattern ----
+const { makePattern, parsePattern, toCsv } = await import('../range/pattern.js');
+const pat = makePattern(7, 3);
+check('range pattern is the same 100 chars as a real alert', pat.length === wire.length);
+check('range pattern round-trips run + seq', JSON.stringify(parsePattern(pat)) === '{"run":7,"seq":3}');
+check('receiver ignores range patterns', (await import('../shared/receive.js')).receiveChirp(pat, nowMinutes()).status === 'pattern');
+check('a real alert is not a range pattern', parsePattern(wire) === null && parsePattern('junk') === null);
+check('range CSV quotes fields', toCsv([{ time: 't', run: 1, protocol: 'fast', distance: 3, noise: 'say "hi", ok', sent: 10, received: 8, device: 'x' }]).split('\n')[1] === '"t","1","fast","3","say ""hi"", ok","10","8","80","x"');
+
 // ---- Receiver decisions (replay / expiry / dedupe / zone) ----
 const { receiveChirp, outsideZone } = await import('../shared/receive.js');
 const seenR = new Set();

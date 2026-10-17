@@ -3,14 +3,16 @@
 //   dup       -> already shown (same wire, or same signer + msgId)
 //   expired   -> drop
 //   malformed -> drop
+//   pattern   -> range-test pattern (zone 0xFFFF), not an alert: drop
 import { fromWire, unpackBody } from './payload.js';
 import { verify } from './trust.js';
 
 export function receiveChirp(text, nowMin, seen = new Set()) {
   let parsed;
   try { parsed = fromWire(text); } catch { return { status: 'malformed' }; }
-  const sender = verify(parsed.body, parsed.sig);
   const alert = unpackBody(parsed.body);
+  if (alert.zone === 0xffff) return { status: 'pattern' };
+  const sender = verify(parsed.body, parsed.sig);
   // Unsigned chirps dedupe by exact wire only, so a spoof can't suppress a real alert's msgId.
   const key = sender ? `${sender.id}:${alert.msgId}` : text;
   if (seen.has(text) || seen.has(key)) return { status: 'dup' };
