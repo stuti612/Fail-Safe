@@ -3,11 +3,11 @@ export const TRUSTED_KEYS = [
   {
     "id": "la-county-oem",
     "name": "CHIRP TEST key 1 (no LA County authority)",
-    "publicKey": "Z0LFC/8dwfHJr5s1HACyXeNUSQkMf6OAxv/eSDPchEY="
+    "publicKey": "7PkbXTTbYbB9yNzrcGVBXD6vL9EHgH/kTyhFl7p/fMY="
   },
   {
     "id": "coliseum-ops",
     "name": "CHIRP venue TEST key (no venue authority)",
-    "publicKey": "oMaOtX2ulwhTZGr3VFZkKzsZdh+mrphXNFiJ852SBy4="
+    "publicKey": "c2TizeGk119DE4kI6kIuGsn2ohg4WBJS5S155Zr6qcc="
   }
 ];
