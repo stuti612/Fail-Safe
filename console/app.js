@@ -6,6 +6,7 @@ import { loadPhrasebook, languages, describe, types, details, allZones } from '.
 import { parseCap } from './cap.js';
 import { speakAlert } from './speak.js';
 import { waitSeconds, isWide, slowKey } from './slow.js';
+import { DEMO, acceptsDemo } from '../shared/demo-policy.js';
 
 const $ = (id) => document.getElementById(id);
 const store = {
@@ -15,27 +16,26 @@ const store = {
 
 await loadPhrasebook();
 
-for (const [code, t] of Object.entries(types())) $('type').add(new Option(`${t.icon} ${t.text.en}`, code));
-for (const [code, d] of Object.entries(details())) $('detail').add(new Option(d.text.en || '(none)', code));
-for (const [id, z] of Object.entries(allZones())) $('zone').add(new Option(z.name, id));
+$('type').add(new Option(`${types()[DEMO.type].icon} ${types()[DEMO.type].text.en}`, DEMO.type));
+$('detail').add(new Option(details()[DEMO.detail].text.en, DEMO.detail));
+$('zone').add(new Option(allZones()[DEMO.zone].name, DEMO.zone));
 
 // ---- Signing key ----
 let agency = null;
-$('secret').value = store.get('chirp.console.secret', '');
+try { localStorage.removeItem('chirp.console.secret'); } catch {}
 $('secret').oninput = checkKey;
 function checkKey() {
   const secret = $('secret').value.trim();
-  store.set('chirp.console.secret', secret);
   agency = null;
   if (!secret) {
-    $('key-status').textContent = 'No key loaded: you can only play spoofed chirps.';
+    $('key-status').textContent = 'Paste the local venue TEST key to send a signed test.';
     return;
   }
   try {
     agency = findTrustedKey(publicKeyFromSecret(secret));
-    $('key-status').textContent = agency
-      ? `✔ Signing as ${agency.name}`
-      : '⚠ Valid key, but phones do not trust it. Their alerts will show as UNVERIFIED.';
+    $('key-status').textContent = agency?.id === DEMO.signerId
+      ? `✔ TEST signer: ${agency.name}`
+      : '✖ This is not the venue TEST key. Broadcasting is blocked.';
   } catch {
     $('key-status').textContent = '✖ That is not a valid signing key.';
   }
@@ -48,7 +48,7 @@ function currentAlert() {
     type: Number($('type').value),
     detail: Number($('detail').value),
     zone: Number($('zone').value),
-    expiresMin: nowMinutes() + Math.max(1, Number($('valid').value) || 60),
+    expiresMin: nowMinutes() + 1,
     msgId: nextMsgId(),
   };
 }
@@ -63,7 +63,7 @@ function nextMsgId() {
 function renderPreview() {
   const sample = { type: Number($('type').value), detail: Number($('detail').value), zone: Number($('zone').value) };
   $('preview').replaceChildren(
-    ...Object.entries(languages()).map(([code, info]) => {
+    ...Object.entries(languages()).filter(([code]) => ['en', 'es'].includes(code)).map(([code, info]) => {
       const d = describe(sample, code);
       const row = document.createElement('div');
       row.className = 'history-item';
@@ -82,7 +82,8 @@ $('send').onclick = () => signAndBroadcast(currentAlert());
 
 function signAndBroadcast(alert) {
   const secret = $('secret').value.trim();
-  if (!secret) return ($('status').textContent = 'Load a signing key first.');
+  if (!secret || agency?.id !== DEMO.signerId) return ($('status').textContent = 'Load the local venue TEST key first.');
+  if (!acceptsDemo(alert, agency, nowMinutes())) return ($('status').textContent = 'Blocked: only the signed TEST venue scenario can be broadcast.');
   const sentAt = store.get('chirp.console.sentAt', {});
   const wait = waitSeconds(alert, sentAt, Date.now());
   if (wait) return ($('status').textContent = `SLOW: this alert just went to this zone. Wait ${wait} s before repeating it.`);
@@ -140,23 +141,16 @@ $('cap-read').onclick = () => {
   } catch (err) {
     out.replaceChildren(line(`✖ ${err.message}`));
   }
-  $('cap-send').classList.toggle('hidden', !capAlerts.length);
+  $('cap-send').classList.add('hidden');
 };
 
-// Puts a CAP-derived alert in the compose form so the all-language preview shows it.
+// CAP is read-only context in this unauthorized hackathon demo.
 function load(a) {
-  $('type').value = a.type;
-  $('detail').value = a.detail;
-  if (a.zone !== null) $('zone').value = a.zone;
-  $('valid').value = a.expiresMin - nowMinutes();
-  renderPreview();
+  const d = describe(a, 'en');
+  $('status').textContent = `CAP preview only: ${d.title} · ${d.zone}. Live alert broadcasting is disabled.`;
 }
 
-$('cap-send').onclick = async () => {
-  if (capAlerts.some((a) => a.zone === null)) return ($('status').textContent = 'Pick a zone for every CAP area first.');
-  if (capAlerts.some((a) => a.expiresMin <= nowMinutes())) return ($('status').textContent = 'CAP alert has expired. Not sent.');
-  for (const a of capAlerts) await signAndBroadcast({ type: a.type, detail: a.detail, zone: a.zone, expiresMin: a.expiresMin, msgId: nextMsgId() });
-};
+$('cap-send').onclick = () => { $('status').textContent = 'CAP broadcasts are disabled in this TEST build.'; };
 
 async function broadcast(alert, wire, senderLabel, speak) {
   if (busy) return;

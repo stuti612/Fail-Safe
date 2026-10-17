@@ -1,10 +1,10 @@
 // CHIRP receiver: listens for chirps, verifies them, shows them in the
 // phone's language. Works fully offline once loaded.
 import { initAudio, listen } from '../shared/audio.js';
-import { fromWire, unpackBody, nowMinutes } from '../shared/payload.js';
-import { verify } from '../shared/trust.js';
+import { nowMinutes } from '../shared/payload.js';
 import { loadPhrasebook, languages, pickDefaultLanguage, ui, describe } from '../shared/phrasebook.js';
-import { RETELL_PHONE, HELP_ENDPOINT } from '../shared/config.js';
+import { RETELL_PHONE } from '../shared/config.js';
+import { verifiedDemoWire } from '../shared/demo-policy.js';
 
 const $ = (id) => document.getElementById(id);
 const store = {
@@ -14,11 +14,20 @@ const store = {
 
 await loadPhrasebook();
 let lang = store.get('chirp.lang', null) || pickDefaultLanguage();
-let history = store.get('chirp.history', []); // newest first; each { alert, sender, wire, at }
+if (!['en', 'es'].includes(lang)) lang = 'en';
+const restore = (h) => {
+  if (typeof h?.wire !== 'string') return null;
+  const valid = verifiedDemoWire(h.wire, nowMinutes());
+  return valid && { ...valid, at: Number.isFinite(h.at) ? h.at : Date.now() };
+};
+let history = (Array.isArray(store.get('chirp.history', [])) ? store.get('chirp.history', []) : [])
+  .map(restore).filter(Boolean).slice(0, 30);
+store.set('chirp.history', history);
 const seen = new Set(history.map((h) => h.wire));
 
 // ---- Language ----
 for (const [code, info] of Object.entries(languages())) {
+  if (!['en', 'es'].includes(code)) continue;
   $('lang').add(new Option(info.name, code, false, code === lang));
 }
 $('lang').onchange = () => {
@@ -55,21 +64,16 @@ async function keepScreenOn() {
 function onChirp(text) {
   // Chirps are repeated for reliability; act on each one once.
   if (seen.has(text)) return;
-  let parsed;
-  try {
-    parsed = fromWire(text);
-  } catch (err) {
-    console.warn('ignored malformed chirp', err.message);
+  const valid = verifiedDemoWire(text, nowMinutes());
+  if (!valid) {
+    console.warn('ignored untrusted, expired or out-of-scope demo chirp');
     return;
   }
   seen.add(text);
-  const sender = verify(parsed.body, parsed.sig);
-  const alert = unpackBody(parsed.body);
-  history.unshift({ alert, sender: sender && { id: sender.id, name: sender.name }, wire: text, at: Date.now() });
+  history.unshift({ ...valid, at: Date.now() });
   history = history.slice(0, 30);
   store.set('chirp.history', history);
-  // Only verified alerts may buzz the phone.
-  if (sender && navigator.vibrate) navigator.vibrate([400, 150, 400]);
+  if (navigator.vibrate) navigator.vibrate([400, 150, 400]);
   render();
 }
 
@@ -92,9 +96,11 @@ function alertCard(entry, { large }) {
   el.querySelector('.meta').textContent = [
     `📍 ${ui('area', lang)}: ${d.zone}`,
     expired ? ui('expired', lang) : `${ui('validUntil', lang)} ${until}`,
-    entry.sender ? `✔ ${ui('verified', lang)}: ${entry.sender.name}` : '',
+    lang === 'es' ? `✔ Firma de prueba: ${entry.sender.name}` : `✔ Demo signature: ${entry.sender.name}`,
   ].filter(Boolean).join(' · ');
-  el.querySelector('.warn').textContent = entry.sender ? '' : `⚠ ${ui('unverified', lang)}`;
+  el.querySelector('.warn').textContent = lang === 'es'
+    ? 'SOLO PRUEBA. No actúe según esta demostración; consulte al personal del lugar. Traducción sin revisión profesional.'
+    : 'TEST ONLY. Do not act on this demo; ask venue staff.';
   if (!large) el.querySelector('.detail').style.fontSize = '1rem';
   return el;
 }
@@ -102,10 +108,12 @@ function alertCard(entry, { large }) {
 function render() {
   $('start').textContent = ui('start', lang);
   $('listening-text').textContent = ui('listening', lang);
-  $('help').textContent = ui('needHelp', lang);
+  $('help').textContent = lang === 'es' ? 'Guardar nota de ayuda aquí' : 'Save help note on this phone';
   $('call').querySelector('button').textContent = `📞 ${ui('callHelp', lang)}`;
   $('earlier').textContent = ui('earlier', lang);
 
+  history = history.map(restore).filter(Boolean);
+  store.set('chirp.history', history);
   const [latest, ...rest] = history;
   $('current').replaceChildren(latest ? alertCard(latest, { large: true }) : '');
   $('actions').classList.toggle('hidden', !latest || !latest.sender);
@@ -116,7 +124,7 @@ function render() {
   renderHelpStatus();
 }
 
-// ---- "I need help": queue on the phone, send when any connection returns ----
+// ---- "I need help": local draft only; no dispatch channel is configured ----
 let outbox = store.get('chirp.outbox', []);
 
 $('help').onclick = () => {
@@ -124,31 +132,13 @@ $('help').onclick = () => {
   outbox.push({ msgId: latest.alert.msgId, type: latest.alert.type, zone: latest.alert.zone, lang, at: Date.now() });
   store.set('chirp.outbox', outbox);
   renderHelpStatus();
-  flushOutbox();
 };
 
-async function flushOutbox() {
-  if (!HELP_ENDPOINT || !navigator.onLine || !outbox.length) return;
-  const pending = [...outbox];
-  for (const req of pending) {
-    try {
-      const res = await fetch(HELP_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(req) });
-      if (!res.ok) break;
-      outbox = outbox.filter((r) => r !== req);
-      store.set('chirp.outbox', outbox);
-      $('help-status').textContent = ui('helpSent', lang);
-    } catch {
-      break;
-    }
-  }
-  renderHelpStatus();
-}
-
 function renderHelpStatus() {
-  if (outbox.length) $('help-status').textContent = `${ui('helpQueued', lang)} (${outbox.length})`;
+  $('help-status').textContent = outbox.length
+    ? (lang === 'es' ? `Guardado solo en este teléfono — NO ENTREGADO (${outbox.length})` : `Saved on this phone only — NOT DELIVERED (${outbox.length})`)
+    : '';
 }
-
-window.addEventListener('online', flushOutbox);
 
 if (RETELL_PHONE) {
   $('call').href = `tel:${RETELL_PHONE}`;
@@ -171,4 +161,4 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('../sw.js').c
 
 document.documentElement.lang = lang;
 render();
-flushOutbox();
+setInterval(render, 30000);

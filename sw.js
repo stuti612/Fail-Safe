@@ -1,6 +1,6 @@
 // Caches the whole app so the receiver keeps working with no network.
 // Bump VERSION whenever any cached file changes.
-const VERSION = 'chirp-v3';
+const VERSION = 'chirp-v4';
 const FILES = [
   './',
   './index.html',
@@ -25,6 +25,7 @@ const FILES = [
   './shared/keys.js',
   './shared/audio.js',
   './shared/config.js',
+  './shared/demo-policy.js',
   './shared/phrasebook.js',
   './shared/phrasebook.json',
   './shared/zones.json',

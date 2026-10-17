@@ -1,25 +1,26 @@
-# CHIRP: Alerts That Travel by Sound
+# CHIRP: TEST Venue Advisory by Sound
 
-CHIRP turns any speaker into a signed, offline, multilingual alert channel. On an ordinary day it translates stadium and Metro announcements for LA28 crowds. In a disaster it reaches exactly the phones within earshot, even when the cell network is down.
+CHIRP is a prototype for sending a signed **TEST** gate advisory through audible sound. A prepared phone must have the page cached, microphone permission granted, and the receiver open and listening. The current build has no agency or venue authority, no verified public-warning use, and no measured venue reach.
 
 Built at the InnovateLA x Dual-Use Hackathon (Resilience Comms lens).
 
 ## How it works
 
-1. A responder picks an alert code and zone in the **console**, which signs it with the agency's Ed25519 key.
-2. The signed code (100 characters) plays as an audible chirp through any speaker: a PA, a siren, a laptop.
-3. The **receiver** on any phone in earshot decodes it offline, verifies the signature, and shows it in the phone's language from a built-in phrasebook. Unsigned or forged chirps are shown as UNVERIFIED.
+1. The **console** signs one hypothetical Gate C TEST scenario with a local demo key. It does not offer evacuation or all-clear commands. Its CAP parser is preview-only and cannot broadcast.
+2. The 100-character code can be encoded as an audible chirp. The Node self-test verifies only an in-memory waveform round trip; a physical speaker-to-phone test is still required.
+3. A prepared, actively listening **receiver** accepts only the signed in-scope TEST code, shows it as a simulation, and ignores forged, expired and out-of-scope packets. This build displays English and unreviewed Spanish. Its help note stays on the phone and is **not delivered**.
 
 ## Run it
 
 ```bash
-node scripts/genkeys.mjs      # create demo agency keys (keys/ is gitignored)
+node scripts/genkeys.mjs      # create demo signing keys (keys/ is gitignored)
 node scripts/selftest.mjs     # end-to-end check without a browser
+node scripts/test-demo-policy.mjs  # signed TEST policy checks
 python3 -m http.server 8000   # open http://localhost:8000
 ```
 
-Phones need HTTPS for the microphone, so test on phones through GitHub Pages or a tunnel.
+Phones need a tested HTTPS origin for microphone permission. Do not publish the app as a safety service. See `docs/PROPOSAL_REVIEW.md` for the operational and physical test gates.
 
 ## Built with
 
-[ggwave](https://github.com/ggerganov/ggwave) (data-over-sound), [TweetNaCl.js](https://github.com/dchest/tweetnacl-js) (Ed25519), Retell AI (voice), IBM Bob and Claude Code (AI coding assistants).
+[ggwave](https://github.com/ggerganov/ggwave) (data-over-sound), [TweetNaCl.js](https://github.com/dchest/tweetnacl-js) (Ed25519), and coding assistants. Retell and IBM Bob use must be reported only if actually implemented.
