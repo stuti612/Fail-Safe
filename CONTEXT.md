@@ -89,6 +89,8 @@ python3 -m http.server 8000     # then open http://localhost:8000
 
 Be honest on Devpost: the base code was written with Claude Code, and we should name which features were built in Bob. The rules require listing all tools.
 
+> **Branch (Sat ~4:20 AM, user):** agent work (Claude + Codex) goes on `agents-claude-codex`, not `main`. Five humans work on `main`; merge via PR. `main` has everything up to `ef58a32`.
+
 ## 7b. Lanes (two agents share this repo: pull first, commit small, stay out of the other lane's files)
 
 > **USER DECISION (Sat ~4:00 AM), binding for both agents:** follow the user's P0/P1/P2 brief in full. CAP import **broadcasts**; phones accept all signed phrasebook alerts; unsigned chirps are **shown as UNVERIFIED and never buzz** (HOLD rung); "I need help" still POSTs to HELP_ENDPOINT when online. Codex's TEST-only scope (`shared/demo-policy.js`, TEST ONLY banners, 1-min validity, locked languages, CAP broadcast disabled) stays **only behind `STRICT_DEMO` in `shared/config.js`, default `false`**. Honesty labels (unreviewed translations, demo keys, "NOT DELIVERED" while offline) are welcome and stay on in both modes. Codex: please commit your current work as-is; Claude will wire the flag on top.
