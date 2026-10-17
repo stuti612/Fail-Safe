@@ -22,9 +22,28 @@ Each response says what changed, why, and gives proof. Judges reward changes to 
 
 ---
 
-## Twist 2 (Sat 4:30 AM)
+## Twist 2 (Sat 4:30 AM): Make it global
 
-_TBD_
+**Status:** build change done and checked in a browser (Sat ~2:30 PM). The real-phone clip is still to record. Owner: Dev 3.
+
+### What changed
+- **Armenian (`hy`) added with no code change**: one new entry per phrase in `shared/phrasebook.json` (53 phrases) plus a language-list entry. The receiver builds its language menu from the phrasebook, so Armenian appears and renders automatically. It falls back to English for any phrase not yet translated.
+- **What "global" costs for CHIRP:** a new **language** is one phrasebook column, a new **city or region** is entries in `zones.json`, and the **over-the-air format doesn't change**. Only codes go on air, so an old phone and a new phone hear the same chirp and each shows it in its own language. No towers, data plans, accounts or app-store approvals are needed to receive.
+- **Translation review sheets** (`docs/translation-review/<lang>.md`): a native speaker checks a language in minutes, and only then is it marked `reviewed: true`.
+
+### Why
+LA has one of the largest Armenian communities outside Armenia (Glendale, Burbank), and today's English-first alerts miss many older Armenian speakers. The same property is what makes CHIRP portable: World Cup and pilgrimage crowds, earthquake drills in Japan, and regions with patchy coverage get alerts in their own languages from whatever loudspeaker is there.
+
+### Proof
+- [x] Headless Chromium at phone size (390×844): Armenian appears in the language menu, the UI and a signed EVACUATE alert render in Armenian, with no page errors. Screenshot: `docs/evidence/twist2-armenian-receiver.png`
+- [x] All tests pass with Armenian added: selftest 84/84, test-demo-policy, server-safety 8/8
+- [ ] Clip: a real phone set to Հայերեն receives a chirp
+- [ ] Commit link
+
+### Honest limits
+- The Armenian text is **machine-drafted Eastern Armenian, not yet reviewed** (`reviewed: false`, labelled in the app). Many LA Armenians read Western Armenian, which would be one more phrasebook entry.
+- The spoken fallback depends on the operator's device having an Armenian voice installed.
+- The Retell phone line reads alerts from the same phrasebook, but whether Retell's voice supports Armenian is not checked.
 
 ---
 

@@ -101,6 +101,13 @@ Be honest on Devpost: the base code was written with Claude Code, and we should 
 
 ## 8. Status
 
+**Sat 2:30 PM (Dev 3, branch `dev3`):**
+- **Help server runs on Dev 3's laptop in MOCK mode**, behind a **cloudflared** quick tunnel (`cloudflared tunnel --url http://localhost:8787`). Not localtunnel or ngrok: their browser warning page breaks the phone's POST /help. The tunnel URL changes on every restart, so update `shared/config.js` and the Retell dashboard each time. Secrets are in `server/.env` (gitignored). Start with `node --env-file=server/.env server/server.mjs`.
+- **Smoke test through the tunnel, 7/7:** Retell get_active_alerts (es) and report_need (life threat → 911 reply), phone POST /help with CORS, GET /help 401 without token / 200 with token, close refused without a name, close as a named person.
+- **Twist 2 build:** Armenian (`hy`) added through `shared/phrasebook.json` only (53 phrases, `reviewed: false`, Eastern Armenian). Headless phone-size browser renders the menu, UI and a signed EVACUATE in Armenian with no errors (`docs/evidence/twist2-armenian-receiver.png`). With fresh keys: selftest 84/84, test-demo-policy PASS, server-safety 8/8. Write-up in `docs/TWISTS.md`. **Needs a sw.js bump (Dev 1)** because phrasebook.json is cached.
+- **Translation review sheets:** `docs/translation-review/<lang>.md`, one per language, for native speakers.
+- **Still to do:** Retell agent, number, API key; set RETELL_PHONE / HELP_ENDPOINT once Pages is live; one real call; help flow end to end on real phones; native-speaker reviews.
+
 **Sat 1:50 PM (Dev 1):**
 - `agents-claude-codex` merged into `merge-agents` → **PR #2 to main** (awaiting merge). Gates on the merge: selftest 84/84, server-safety 8/8, sw-cache-safety, test-demo-policy all PASS.
 - **Demo keys regenerated** (old secrets were not in the repo). `shared/keys.js` updated, sw `chirp-v12`. Secrets live only on Dev 1's laptop in `keys/`. Any chirp signed with older keys now shows UNVERIFIED.
