@@ -94,6 +94,8 @@ r = parseCap(cap({ areas: ['Pacific Palisades: Sunset Blvd', 'Malibu: Pacific Co
 check('multiple areas -> one alert per zone, unmatched kept for manual pick', JSON.stringify(r.alerts.map((a) => a.zone)) === '[3,5,null]');
 r = parseCap(cap({ status: 'Exercise' }), opts);
 check('non-Actual status maps to TEST preview', r.alerts[0].type === 12);
+r = parseCap(cap({ expires: '2099-01-01T00:00:00Z' }), opts);
+check('far-future CAP expiry is capped at 12 h (bounds replay)', r.alerts[0].expiresMin === opts.nowMin + 12 * 60 && r.warnings.some((w) => /capped/.test(w)));
 check('expired CAP is refused', throws(() => parseCap(cap({ expires: '2020-01-01T00:00:00Z' }), opts), /expired/));
 check('unreadable <expires> is refused', throws(() => parseCap(cap({ expires: 'soon' }), opts), /Unreadable/));
 check('malformed XML is refused', throws(() => parseCap(cap().replace('</info>', ''), opts), /Malformed/));

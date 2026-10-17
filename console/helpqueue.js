@@ -28,7 +28,7 @@ async function supervisorFetch(url, opts = {}) {
 export async function publishToServer(wire) {
   if (!SERVER) return 'phone line: not configured';
   try {
-    const res = await fetch(`${SERVER}/alerts`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ wire }) });
+    const res = await supervisorFetch(`${SERVER}/alerts`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ wire }) });
     return res.ok ? 'phone line: ✔ acknowledged' : `phone line: ✖ refused (${await res.text()})`;
   } catch {
     return 'phone line: ✖ unreachable';
@@ -36,8 +36,12 @@ export async function publishToServer(wire) {
 }
 
 export function startHelpQueue({ listEl, statusEl, listenBtn, store }) {
-  const queue = store.get('chirp.console.help', []);
-  const save = () => store.set('chirp.console.help', queue);
+  // Same retention as the server: handled entries lose personal details after 1 h, all go after 24 h.
+  const prune = (q) => q.filter((h) => h && Date.now() - (h.heardAt || 0) < 24 * 3600_000).map((h) =>
+    h.status !== 'open' && Date.now() - (h.handledAt || h.heardAt || 0) > 3600_000 ? { ...h, note: '', from: null, lat: null, lon: null } : h);
+  const loaded = store.get('chirp.console.help', []);
+  const queue = prune(Array.isArray(loaded) ? loaded : []);
+  const save = () => { queue.splice(0, queue.length, ...prune(queue)); store.set('chirp.console.help', queue); };
 
   function add(req, source) {
     const existing = queue.find((q) => helpKey(q) === helpKey(req));
@@ -59,7 +63,8 @@ export function startHelpQueue({ listEl, statusEl, listenBtn, store }) {
     listEl.replaceChildren(...[...open, ...done].map((q) => {
       const tr = document.createElement('tr');
       if (q.status !== 'open') tr.style.opacity = '0.5';
-      const where = q.lat != null ? `${q.lat.toFixed(2)}, ${q.lon.toFixed(2)}` : (q.note || q.from || '—');
+      const lat = Number(q.lat), lon = Number(q.lon);
+      const where = q.lat != null && Number.isFinite(lat) && Number.isFinite(lon) ? `${lat.toFixed(2)}, ${lon.toFixed(2)}` : (q.note || q.from || '—');
       const cells = [
         q.lifeThreat ? '🔴 LIFE THREAT' : q.vulnerable ? '🟠 VULNERABLE' : '⚪',
         `${NEEDS[q.need] || 'other'} · ${q.people || 1} people · ${q.lang || '?'}`,
@@ -89,7 +94,7 @@ export function startHelpQueue({ listEl, statusEl, listenBtn, store }) {
   function handled(q) {
     const by = prompt('Your name (a person must close every help request):')?.trim();
     if (!by) return;
-    Object.assign(q, { status: 'handled', handledBy: by });
+    Object.assign(q, { status: 'handled', handledBy: by, handledAt: Date.now() });
     save();
     render();
     if (SERVER) supervisorFetch(`${SERVER}/help/handled`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: helpKey(q), by }) }).catch(() => {});

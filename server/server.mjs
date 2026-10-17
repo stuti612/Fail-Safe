@@ -3,7 +3,7 @@
 // Endpoints (CORS open, JSON):
 //   GET  /help                  ranked queue (Bearer CHIRP_SUPERVISOR_TOKEN if set)        POST /help        receiver "I need help"
 //   POST /help/handled          {key, by}           POST /help/callback  {key}  call -> retry -> sms -> door knock           GET  /alerts?lang=es   text the phone agent reads
-//   POST /alerts                {wire}  console publishes the signed alert it chirped
+//   POST /alerts                {wire}  console publishes the signed alert it chirped (supervisor)
 //   POST /retell/function       Retell custom functions: get_active_alerts, report_need
 //   POST /retell/webhook        Retell call events
 import { createServer } from 'node:http';
@@ -81,7 +81,7 @@ createServer(async (req, res) => {
   if (retell && KEY && !verifyRetell(raw, req.headers['x-retell-signature'], KEY)) return send(res, 401, 'bad signature');
   try {
     const route = `${req.method} ${url.pathname}`;
-    if (['GET /help', 'POST /help/handled', 'POST /help/callback'].includes(route) && !supervisor(req)) return send(res, 401, 'supervisor token required');
+    if (['GET /help', 'POST /help/handled', 'POST /help/callback', 'POST /alerts'].includes(route) && !supervisor(req)) return send(res, 401, 'supervisor token required');
     if (route === 'GET /help') return send(res, 200, rankedHelp(state));
     if (route === 'POST /help') { const r = reportNeed(state, body, { source: 'app' }); save(); return send(res, 200, r); }
     if (route === 'POST /help/handled') return markHandled(state, body.key, body.by) ? (save(), send(res, 200, { ok: true })) : send(res, 400, 'need key and a person\'s name');

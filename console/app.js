@@ -5,7 +5,7 @@ import { sign, publicKeyFromSecret, findTrustedKey } from '../shared/trust.js';
 import { loadPhrasebook, languages, describe, types, details, allZones } from '../shared/phrasebook.js';
 import { STRICT_DEMO } from '../shared/config.js';
 import { DEMO, acceptsDemo } from '../shared/demo-policy.js';
-import { parseCap } from './cap.js';
+import { parseCap, MAX_VALID_MIN } from './cap.js';
 import { speakAlert } from './speak.js';
 import { waitSeconds, isWide, slowKey } from './slow.js';
 import { startHelpQueue, publishToServer } from './helpqueue.js';
@@ -58,7 +58,7 @@ function currentAlert() {
     type: Number($('type').value),
     detail: Number($('detail').value),
     zone: Number($('zone').value),
-    expiresMin: nowMinutes() + (STRICT_DEMO ? 1 : Math.max(1, Number($('valid').value) || 60)),
+    expiresMin: nowMinutes() + (STRICT_DEMO ? 1 : Math.min(MAX_VALID_MIN, Math.max(1, Number($('valid').value) || 60))),
     msgId: nextMsgId(),
   };
 }
@@ -92,23 +92,24 @@ $('send').onclick = () => signAndBroadcast(currentAlert());
 
 async function signAndBroadcast(alert) {
   const secret = $('secret').value.trim();
-  if (!secret) return ($('status').textContent = 'Load a signing key first.');
-  if (STRICT_DEMO && !acceptsDemo(alert, agency, nowMinutes())) return ($('status').textContent = 'Strict mode: only the signed TEST venue scenario can be broadcast.');
+  const stop = (msg) => { $('status').textContent = msg; return false; };
+  if (!secret) return stop('Load a signing key first.');
+  if (STRICT_DEMO && !acceptsDemo(alert, agency, nowMinutes())) return stop('Strict mode: only the signed TEST venue scenario can be broadcast.');
   const sentAt = store.get('chirp.console.sentAt', {});
   const wait = waitSeconds(alert, sentAt, Date.now());
-  if (wait) return ($('status').textContent = `SLOW: this alert just went to this zone. Wait ${wait} s before repeating it.`);
+  if (wait) return stop(`SLOW: this alert just went to this zone. Wait ${wait} s before repeating it.`);
   if (isWide(alert, allZones())) {
     const d = describe(alert, 'en');
     const typed = prompt(`WIDE-AREA ALERT\n"${d.title}" to everyone in ${d.zone}.\nType SEND to confirm.`);
-    if (typed?.trim().toUpperCase() !== 'SEND') return ($('status').textContent = 'Wide-area alert not confirmed. Nothing sent.');
+    if (typed?.trim().toUpperCase() !== 'SEND') return stop('Wide-area alert not confirmed. Nothing sent.');
   }
   const body = packBody(alert);
   const wire = toWire(body, sign(body, secret));
   // Cooldown starts only once the chirp actually played.
-  if (await broadcast(alert, wire, agency ? agency.name : 'Untrusted key', $('speak').checked)) {
-    store.set('chirp.console.sentAt', { ...store.get('chirp.console.sentAt', {}), [slowKey(alert)]: Date.now() });
-    if (agency) $('status').textContent += ` · ${await publishToServer(wire)}`;
-  }
+  if (!(await broadcast(alert, wire, agency ? agency.name : 'Untrusted key', $('speak').checked))) return false;
+  store.set('chirp.console.sentAt', { ...store.get('chirp.console.sentAt', {}), [slowKey(alert)]: Date.now() });
+  if (agency) $('status').textContent += ` · ${await publishToServer(wire)}`;
+  return true;
 }
 
 $('spoof').onclick = () => {
@@ -176,13 +177,20 @@ $('cap-send').onclick = async () => {
   if (STRICT_DEMO) return;
   if (capAlerts.some((a) => a.zone === null)) return ($('status').textContent = 'Pick a zone for every CAP area first.');
   if (capAlerts.some((a) => a.expiresMin <= nowMinutes())) return ($('status').textContent = 'CAP alert has expired. Not sent.');
-  for (const a of capAlerts) await signAndBroadcast({ type: a.type, detail: a.detail, zone: a.zone, expiresMin: a.expiresMin, msgId: nextMsgId() });
+  for (const [i, a] of capAlerts.entries()) {
+    if (!(await signAndBroadcast({ type: a.type, detail: a.detail, zone: a.zone, expiresMin: a.expiresMin, msgId: nextMsgId() }))) {
+      $('status').textContent += ` · CAP batch stopped at area ${i + 1} of ${capAlerts.length}; later areas NOT sent.`;
+      return;
+    }
+  }
+  $('status').textContent += ` · all ${capAlerts.length} CAP area(s) sent.`;
 };
 
-// Resolves true only if every repeat played.
+// Resolves true if at least one repeat played (it is on air; cooldown must apply).
 async function broadcast(alert, wire, senderLabel, speak) {
   if (busy) return false;
   busy = true;
+  let played = 0;
   $('send').disabled = $('spoof').disabled = true;
   try {
     await initAudio();
@@ -194,6 +202,7 @@ async function broadcast(alert, wire, senderLabel, speak) {
     for (let i = 1; i <= repeats; i++) {
       $('status').textContent = `Playing ${i}/${repeats} · ${wire.length} chars · ${seconds.toFixed(1)} s each`;
       await play(samples);
+      played++;
       if (i < repeats) await new Promise((r) => setTimeout(r, 700));
     }
     let done = `Done · ${wire.length} chars · ${seconds.toFixed(1)} s per chirp`;
@@ -209,8 +218,8 @@ async function broadcast(alert, wire, senderLabel, speak) {
     $('status').textContent = done;
     return true;
   } catch (err) {
-    $('status').textContent = `Error: ${err.message}`;
-    return false;
+    $('status').textContent = `Error after ${played} chirp(s): ${err.message}`;
+    return played > 0;
   } finally {
     busy = false;
     $('send').disabled = $('spoof').disabled = false;

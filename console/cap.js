@@ -6,6 +6,8 @@
 
 export const MAX_CAP_CHARS = 64 * 1024;
 export const DEFAULT_VALID_MIN = 60;
+// Longest validity CHIRP will sign: bounds how long a recorded chirp can be replayed.
+export const MAX_VALID_MIN = 12 * 60;
 
 const ENT = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'" };
 const clean = (s) => s.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1').replace(/&(amp|lt|gt|quot|apos);/g, (_, e) => ENT[e]).trim();
@@ -67,6 +69,10 @@ export function parseCap(xml, { map, zones, nowMin }) {
     if (Number.isNaN(t)) throw new Error(`Unreadable <expires>: "${expires}".`);
     expiresMin = Math.floor(t / 60000);
     if (expiresMin <= nowMin) throw new Error(`Alert already expired (${expires}). Refusing to broadcast.`);
+    if (expiresMin > nowMin + MAX_VALID_MIN) {
+      expiresMin = nowMin + MAX_VALID_MIN;
+      warnings.push(`<expires> is more than ${MAX_VALID_MIN / 60} h away: capped at ${MAX_VALID_MIN / 60} h. Re-issue to extend.`);
+    }
   } else {
     warnings.push(`No <expires>: valid for ${DEFAULT_VALID_MIN} minutes.`);
   }
