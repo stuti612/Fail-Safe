@@ -158,6 +158,7 @@ Be honest on Devpost: the base code was written with Claude Code, and we should 
 
 ## 10. Twist log
 
+- **Twist 2 (Sat 4:30 AM): make it global.** Written response + paste-ready text in `docs/TWISTS.md` (Sat ~3:15 PM). Build proof pending (Dev 3: a language added via `phrasebook.json` only); fill in [LANGUAGE] and the link before submitting. Limit noted: RTL scripts are not handled.
 - **Twist 1 (Fri 11:30 PM): identify a federal funding pathway.** Draft response in `docs/TWISTS.md`. Build change: CAP/IPAWS import, built Sat ~3:40 AM (proof checklist in TWISTS.md; clip still to record).
 
 ## 11. Decision log
