@@ -142,4 +142,25 @@ enqueueHelp(q, { ...base, reqId: 4, createdMin: 50 });                          
 check('duplicate help request is ignored', enqueueHelp(q, { ...base, reqId: 3, createdMin: 300, lifeThreat: true }) === false && q.length === 4);
 check('help queue: life threat, then vulnerable, then oldest', rankHelp(q).map((r) => r.reqId).join() === '3,2,4,1');
 
+// ---- Help server / Retell ----
+const srv = await import('../server/core.mjs');
+const st = srv.createState();
+check('server refuses an unsigned alert', throws(() => srv.publishAlert(st, toWire(body, new Uint8Array(64))), /unsigned/));
+srv.publishAlert(st, wire);
+check('phone agent reads the signed alert in Spanish', /EVACÚE AHORA/.test(srv.activeAlertsText(st, 'es')));
+check('no alerts -> agent never says "safe" is OK', /Do not tell the caller they are safe/.test(srv.activeAlertsText(srv.createState())));
+check('webhook with missing transcript queues a callback', srv.handleRetellWebhook(st, { event: 'call_ended', call: { call_id: 'c1' } }).queued === true);
+check('webhook with garbage transcript queues a callback', srv.handleRetellWebhook(st, { event: 'call_ended', call: { call_id: 'c2', transcript: '%%%% ... ##' } }).queued === true);
+check('webhook with null body does not crash', srv.handleRetellWebhook(st, null).queued === false);
+check('same call is not queued twice (call_analyzed after call_ended)', srv.handleRetellWebhook(st, { event: 'call_analyzed', call: { call_id: 'c1' } }).queued === false);
+check('ordinary info-only call is not queued', srv.handleRetellWebhook(st, { event: 'call_ended', call: { call_id: 'c3', transcript: 'Agent: hello. User: what is the alert for Altadena please' } }).queued === false);
+check('life-threat words in transcript are queued as life threat', srv.handleRetellWebhook(st, { event: 'call_ended', call: { call_id: 'c4', transcript: 'my father is not breathing' } }).queued && srv.rankedHelp(st)[0].lifeThreat);
+check('report_need with life threat tells agent to send caller to 911', /911/.test(srv.reportNeed(st, { need: 'medical', life_threat: true }).reply));
+check('help cannot be closed without a person\'s name', srv.markHandled(st, `${st.help[0].reqId}:${st.help[0].createdMin}`, '') === false);
+const sigBody = '{"event":"call_ended"}', ts = String(Date.now());
+const { createHmac } = await import('node:crypto');
+const goodSig = `v=${ts},d=${createHmac('sha256', 'k').update(sigBody + ts).digest('hex')}`;
+check('Retell signature verifies', srv.verifyRetell(sigBody, goodSig, 'k'));
+check('Retell signature rejects tampering / wrong key / stale', !srv.verifyRetell(sigBody + ' ', goodSig, 'k') && !srv.verifyRetell(sigBody, goodSig, 'x') && !srv.verifyRetell(sigBody, goodSig, 'k', Date.now() + 6 * 60_000));
+
 process.exit(failed ? 1 : 0);
