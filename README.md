@@ -23,6 +23,8 @@ python3 -m http.server 8000
 
 Open `/console/` and `/receiver/` from the local server. Phones require a tested HTTPS origin for microphone access. Keep the mock help server on localhost until access control, retention, live staffing, and end-to-end operation are verified. `docs/DEVICE_TEST.md` has the real-device protocol.
 
+For a **local synthetic help-queue demo**, start `server/server.mjs` with a `CHIRP_SUPERVISOR_TOKEN` and set `CHIRP_APP_ORIGIN` to the exact browser origin (for example `http://localhost:8000`). The server binds to `127.0.0.1`; without a supervisor token its private queue, callback, and alert-publish routes are unavailable. `HELP_ENDPOINT` remains empty until a test endpoint is deliberately configured in `shared/config.js`. A saved demo request does not mean a responder has accepted it.
+
 ## Built with
 
 [ggwave](https://github.com/ggerganov/ggwave) for data over sound and [TweetNaCl.js](https://github.com/dchest/tweetnacl-js) for Ed25519 signatures. AI tools used in the build and any Retell or IBM Bob use must be reported accurately in the submission.

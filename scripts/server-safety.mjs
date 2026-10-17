@@ -65,7 +65,7 @@ await check('supervisor queue is not exposed without authorization', async () =>
   const port = await freePort();
   const child = spawn(process.execPath, ['server/server.mjs'], {
     cwd: fileURLToPath(new URL('..', import.meta.url)),
-    env: { ...process.env, PORT: String(port), CHIRP_SUPERVISOR_TOKEN: 'synthetic-test-token' },
+    env: { ...process.env, PORT: String(port), CHIRP_SUPERVISOR_TOKEN: 'synthetic-test-token', CHIRP_APP_ORIGIN: 'http://localhost:8000' },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   try {
@@ -77,10 +77,41 @@ await check('supervisor queue is not exposed without authorization', async () =>
     assert.ok(response, 'server did not start');
     assert.ok([401, 403].includes(response.status), `GET /help returned ${response.status}`);
     assert.notEqual(response.headers.get('access-control-allow-origin'), '*');
+    const allowed = await fetch(`http://127.0.0.1:${port}/help`, { headers: { Authorization: 'Bearer synthetic-test-token', Origin: 'http://localhost:8000' } });
+    assert.equal(allowed.status, 200);
+    assert.equal(allowed.headers.get('access-control-allow-origin'), 'http://localhost:8000');
+    assert.equal(allowed.headers.get('cache-control'), 'no-store');
+    const unrelated = await fetch(`http://127.0.0.1:${port}/help`, { headers: { Authorization: 'Bearer synthetic-test-token', Origin: 'https://unrelated.test' } });
+    assert.equal(unrelated.headers.get('access-control-allow-origin'), null);
+    const preflight = await fetch(`http://127.0.0.1:${port}/help`, { method: 'OPTIONS', headers: { Origin: 'https://unrelated.test' } });
+    assert.equal(preflight.status, 403);
   } finally {
     child.kill();
   }
 });
 
-console.log(`${7 - failures.length}/7 server-safety gates passed`);
+await check('missing supervisor token closes private routes by default', async () => {
+  const port = await freePort();
+  const child = spawn(process.execPath, ['server/server.mjs'], {
+    cwd: fileURLToPath(new URL('..', import.meta.url)),
+    env: { ...process.env, PORT: String(port), CHIRP_SUPERVISOR_TOKEN: '', CHIRP_APP_ORIGIN: '' },
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  try {
+    let response;
+    for (let i = 0; i < 30; i++) {
+      if (child.exitCode !== null) throw new Error(`server exited ${child.exitCode}`);
+      try { response = await fetch(`http://127.0.0.1:${port}/help`, { headers: { Origin: 'https://unrelated.test' } }); break; } catch { await delay(50); }
+    }
+    assert.ok(response, 'server did not start');
+    assert.equal(response.status, 503);
+    assert.equal(response.headers.get('access-control-allow-origin'), null);
+    const simplePost = await fetch(`http://127.0.0.1:${port}/help`, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: '{}' });
+    assert.equal(simplePost.status, 415);
+  } finally {
+    child.kill();
+  }
+});
+
+console.log(`${8 - failures.length}/8 server-safety gates passed`);
 if (failures.length) process.exitCode = 1;
