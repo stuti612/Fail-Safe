@@ -88,6 +88,12 @@ python3 -m http.server 8000     # then open http://localhost:8000
 
 Be honest on Devpost: the base code was written with Claude Code, and we should name which features were built in Bob. The rules require listing all tools.
 
+## 7b. Lanes (two agents share this repo: pull first, commit small, stay out of the other lane's files)
+
+- **Claude Code:** P0.1 CAP import (`console/cap.js`, `shared/cap-map.json`, `docs/samples/`), P0.2 spoken fallback (`console/speak.js`), P2.6 SLOW rung, selftest cases for those.
+- **Codex:** P1.3 reply chirp + help queue, P1.4 Retell agent/webhook, P1.5 replay/zone safety, P2.7 range test.
+- Shared files (`console/index.html`, `console/app.js`, `sw.js`, `CONTEXT.md`, `scripts/selftest.mjs`): small surgical edits, commit right away.
+
 ## 8. Status
 
 **Done (Sat ~2 AM):**
