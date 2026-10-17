@@ -101,6 +101,13 @@ Be honest on Devpost: the base code was written with Claude Code, and we should 
 
 ## 8. Status
 
+**Sat ~3:30 PM (Dev 2): receiver, badges, kiosk.** Branch `dev2`.
+- Expired signed chirps now show a grey **Expired** card, no buzz/tone/flash (fixes the demo beat 1:30 gap). Three badges: Demo signature / UNVERIFIED / Expired.
+- Verified alerts: Android vibration + 2-beep tone (660/880 Hz, below the chirp band) + 3-flash screen flash; screen readers announce each new alert once.
+- **Shelter screen `?kiosk=1`** (`&langs=en,es,zh,ko`): huge text, stacked languages, ~6 s siren with Silence, fullscreen, wake lock, mic watchdog.
+- Contrast to WCAG AA for severe/moderate fills (`shared/style.css`); receiver restyled.
+- Checked in desktop Chromium via `?debug=1` paste only. selftest 84/84, demo-policy, sw-cache-safety, server-safety 8/8 PASS. **No real speaker → phone test yet.** sw.js not bumped (network-first, so online reload picks it up; Dev 1 may bump).
+
 **Sat ~2:45 PM (Dev 1): console on a phone.**
 - Every signed broadcast (compose and each CAP area) now opens a **full-screen review**: the alert card, every language, validity, signer, and airtime before Approve (app phones get it in 6.8 s; full broadcast ≈ N s). Big Approve and Cancel buttons. A wide zone needs SEND typed in the review (replaces `prompt()`). Over 3 spoken languages shows a warning. The spoof button skips the review (attack demo).
 - Speech is **interleaved** with the repeats (chirp, lang 1, chirp, lang 2), so no language waits behind every repeat. Default spoken languages are `en es`.
