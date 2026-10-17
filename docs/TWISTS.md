@@ -6,32 +6,15 @@ Each response says what changed, why, and gives proof. Judges reward changes to 
 
 ## Twist 1 (Fri 11:30 PM): Identify a federal funding pathway
 
-**Status:** pathway drafted. CAP/IPAWS import BUILT (Sat ~3:40 AM): console card "Import a CAP / IPAWS alert". Due about Sat 5:30 AM.
+**Submission source of truth:** [`TWIST1_VERIFIED.md`](TWIST1_VERIFIED.md) and [`twist1-evidence.json`](twist1-evidence.json). This section supersedes the earlier speculative DHS/FEMA pathways and CAP-to-phone claim.
 
-### What changed
-- **Primary funding path:** DHS Science & Technology Directorate, **Silicon Valley Innovation Program (SVIP)**. It funds startups in non-dilutive phases for homeland-security and first-responder technology, and emergency alerting fits squarely.
-- **Alternatives:** **NIST Public Safety Communications Research (PSCR)** prize challenges · **NSF SBIR/STTR** Phase I to de-risk the acoustic modem · **NSF I-Corps** for customer discovery (the usual first step).
-- **Dual-use / defense:** AFWERX or Army xTech. Use case: mass notification on bases with no network, and multilingual alerts to civilian populations.
-- **How customers pay:** LA County can buy CHIRP with **FEMA Homeland Security Grant Program, Urban Area Security Initiative (UASI)** funds (the LA/Long Beach urban area receives this every year), or with **Hazard Mitigation Grant Program** funds after a declared disaster.
-- **Sequence:** I-Corps → NSF SBIR Phase I → DHS SVIP pilot with LA County OEM → county purchase with UASI funds.
-- **Build change:** CHIRP now imports **Common Alerting Protocol (CAP)** alerts, the format used by FEMA's **IPAWS**. A real CAP alert can be turned into a signed chirp in one click.
+**Possible federal R&D pathway:** [NSF SBIR Phase I](https://www.nsf.gov/funding/opportunities/small-business-innovation-research-small-business-technology/nsf26-510/solicitation), up to $305,000 for 6–18 months for an eligible U.S. small business with a genuinely novel technical question. CHIRP's proposed research is reliable authenticated acoustic reception through noisy venue speakers by prepared phones. A [Project Pitch](https://seedfund.nsf.gov/project-pitch/) and invitation precede a full proposal. We have no invitation, award, confirmed eligibility, venue partner, or evidence yet that our engineering is novel enough.
 
-### Why
-Federal funders, and the counties spending federal grants, only buy alerting tools that plug into IPAWS. Without CAP compatibility, CHIRP is a demo. With it, CHIRP extends the national alerting system into places where it can't reach today (dead zones, non-English speakers).
+**Build change already verified:** the repo now has a signed 100-character TEST packet for a hypothetical LA venue gate scenario. `node scripts/test-demo-policy.mjs` checks that forged, expired, wrong-site and emergency packets are rejected. `node scripts/funding-evidence.mjs` exports a digital ggwave waveform loopback at 6.83 s (FAST) and 3.75 s (FASTEST), with signature checks. These timings are **not** speaker-to-phone measurements. The CAP 1.2 parser can preview sample XML; CAP broadcast is disabled in the currently committed safety build. No real IPAWS feed or agency authority exists.
 
-### Proof
-- [x] Console parses CAP 1.2: `<event>` / SAME `<eventCode>`, `<urgency>`, `<severity>`, `<expires>`, `<area><areaDesc>` → phrasebook codes via `shared/cap-map.json` → best-match zone (else manual pick) → all-language preview → sign → chirp. Code: `console/cap.js`.
-- [x] Safety rules: unknown event → generic OFFICIAL_ALERT code + warning; multiple areas → one alert per zone; expired / Cancel / malformed / oversized → refused; non-Actual status → sent as TEST. CAP free text never goes on air (codes only, still 100 chars).
-- [x] 3 samples in `docs/samples/` (evacuation with SAME code, multi-area smoke with an unmatched area, unknown tsunami event), loadable from the console's "Load a sample" menu.
-- [x] `node scripts/selftest.mjs`: 18 CAP cases pass (missing fields, unknown event, multi-area, expired, malformed, oversized, Cancel, Exercise, mapping codes exist).
-- [x] Browser smoke test (headless Chromium): all 3 samples render, expired refused, no console errors.
-- [ ] Screenshot or clip: a sample CAP XML pasted into the console → chirp → phone shows it in Spanish
-- [ ] Link to the commit (after push)
+**Next proof gate:** reload a prepared receiver online so service worker v4 is active, then test laptop speaker to two phones with the receiver open and microphone permission granted; repeat with radios off after confirming cache readiness. Record successes, failures, latency, device models, distance, noise and offline status. Do not infer reach from speaker range or digital loopback.
 
-### Verify before submitting
-- [ ] SVIP is accepting applications, and which topic fits
-- [ ] SBIR/STTR is currently authorized (it was in question in late 2025)
-- [ ] The FEMA programs we name are active (some, such as BRIC, were cancelled in 2025, so don't cite those)
+**Paste-ready response:** “Our possible future federal funding pathway is NSF SBIR Phase I. An eligible U.S. small business could seek up to $305,000 over 6–18 months to research reliable, authenticated acoustic advisories through noisy venue speakers, if CHIRP establishes genuine technical novelty and customer demand. An NSF Project Pitch and official invitation are required before a full proposal; we have neither. For this twist we added a reproducible evidence export and a signed TEST-only receiver guard. The export confirms a 100-character packet and digital ggwave round trip; speaker-to-phone and offline-phone results remain pending.”
 
 ---
 
