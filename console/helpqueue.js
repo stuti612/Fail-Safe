@@ -42,8 +42,9 @@ export function startHelpQueue({ listEl, statusEl, listenBtn, store }) {
   function add(req, source) {
     const existing = queue.find((q) => helpKey(q) === helpKey(req));
     if (existing) {
-      if (req.status === 'handled' && existing.status !== 'handled') Object.assign(existing, { status: 'handled', handledBy: req.handledBy });
-      else return;
+      const changed = JSON.stringify([existing.status, existing.callback, existing.lifeThreat]) !== JSON.stringify([req.status ?? existing.status, req.callback ?? existing.callback, req.lifeThreat || existing.lifeThreat]);
+      if (!changed) return;
+      Object.assign(existing, { status: req.status ?? existing.status, handledBy: req.handledBy ?? existing.handledBy, callback: req.callback ?? existing.callback, lifeThreat: req.lifeThreat || existing.lifeThreat });
     } else {
       enqueueHelp(queue, { label: 'unverified resident report', status: 'open', heardAt: Date.now(), ...req, source: req.source || source });
     }
@@ -64,7 +65,7 @@ export function startHelpQueue({ listEl, statusEl, listenBtn, store }) {
         `${NEEDS[q.need] || 'other'} · ${q.people || 1} people · ${q.lang || '?'}`,
         `${Math.max(0, nowMinutes() - (q.createdMin || nowMinutes()))} min ago`,
         where,
-        `${q.source} · ${q.label}`,
+        `${q.source} · ${q.label}${q.callback ? ` · 📞 ${q.callback.step === 'door knock' ? '🚪 DOOR KNOCK NEEDED' : q.callback.step}` : ''}`,
       ];
       for (const text of cells) tr.appendChild(Object.assign(document.createElement('td'), { textContent: text }));
       const td = document.createElement('td');
@@ -72,6 +73,13 @@ export function startHelpQueue({ listEl, statusEl, listenBtn, store }) {
         const b = Object.assign(document.createElement('button'), { className: 'secondary', textContent: 'Handled by…' });
         b.onclick = () => handled(q);
         td.appendChild(b);
+        if (SERVER && q.source !== 'sound' && !q.callback) {
+          const c = Object.assign(document.createElement('button'), { className: 'secondary', textContent: q.from ? 'Call back' : 'Escalate' });
+          c.title = 'Call -> retry -> SMS -> door knock. No answer is never treated as OK.';
+          c.onclick = () => supervisorFetch(`${SERVER}/help/callback`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: helpKey(q) }) })
+            .then((r) => r.json()).then((r) => { q.callback = { step: r.step, log: [] }; save(); render(); }).catch(() => (statusEl.textContent = 'Callback failed: server unreachable'));
+          td.appendChild(c);
+        }
       } else td.textContent = `✔ ${q.handledBy || ''}`;
       tr.appendChild(td);
       return tr;
