@@ -101,6 +101,13 @@ Be honest on Devpost: the base code was written with Claude Code, and we should 
 
 ## 8. Status
 
+**Sat ~4:15 PM (Dev 3): help line live in Retell.** Branch `dev3`.
+- **Help server** runs on Dev 3's laptop with the Retell API key (**signatures enforced**), behind a cloudflared quick tunnel (`https://exception-tons-operating-scout.trycloudflare.com`). Run in two terminals: `caffeinate -i node --env-file=server/.env server/server.mjs` and `cloudflared tunnel --no-autoupdate --url http://localhost:8787`. Not localtunnel or ngrok (their browser warning page breaks the phone's POST /help). **The tunnel URL changes on every cloudflared restart**: then update the Retell functions and webhook and `shared/config.js`. Secrets are in `server/.env` (gitignored).
+- **Retell agent "CHIRP Help Line"**: single prompt from `retell/agent_prompt.md`, English (US) + Spanish (Latin America), custom functions `get_active_alerts` / `report_need`, Call Transfer (cold) to a teammate's phone, agent webhook. **Browser test calls in English and Spanish work**: the agent looks up alerts and records the need, and it lands in the help queue signed by Retell (`source: phone`, lang `es`). Transfer can't run in browser calls (Retell limit). **No phone number yet** (needs a card); then RETELL_PHONE / RETELL_FROM_NUMBER, a real call and a real transfer.
+- **Twist 2 build:** Armenian through `shared/phrasebook.json` only (commit `5d151e4`). Proof and paste-ready text in `docs/TWISTS.md`. **Needs a sw.js bump (Dev 1).**
+- **Translation review sheets:** `docs/translation-review/<lang>.md`. No language reviewed yet.
+- **Still to do:** set HELP_ENDPOINT in `shared/config.js` (Pages origin in `CHIRP_APP_ORIGIN`); help flow end to end on real phones; clear test entries from `server/queue.json` before the demo.
+
 **Sat ~3:30 PM (Dev 2): receiver, badges, kiosk.** Branch `dev2`.
 - Expired signed chirps now show a grey **Expired** card, no buzz/tone/flash (fixes the demo beat 1:30 gap). Three badges: Demo signature / UNVERIFIED / Expired.
 - Verified alerts: Android vibration + 2-beep tone (660/880 Hz, below the chirp band) + 3-flash screen flash; screen readers announce each new alert once.
