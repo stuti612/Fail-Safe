@@ -1,7 +1,7 @@
 // Deployment settings. Fill these in once the services exist.
 
 // Retell AI phone number for "Call for help in my language" (E.164, e.g. +12135550100).
-export const RETELL_PHONE = '';
+export const RETELL_PHONE = '+12138020730';
 
 // Where "I need help" requests are POSTed (server/server.mjs, e.g. https://<tunnel>/help).
 // Empty = keep them on the phone and say NOT DELIVERED.
