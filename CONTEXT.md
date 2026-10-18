@@ -101,6 +101,8 @@ Be honest on Devpost: the base code was written with Claude Code, and we should 
 
 ## 8. Status
 
+**Sat evening (Codex, `testing/full-audit`): software audit completed.** Full method, counts, repros and fix order: `docs/testing/REPORT.md` (tracks A–D). Track A's permitted rerun: 138 PASS / 21 FAIL / 48 INFO; B: 90/126 checks passed; all eight Chromium suites ran. The most urgent reproduced defect is an aborted HTTP body crashing the help server. CAP event/zone misclassification, a spoofed ALL CLEAR displacing a verified alert on screen, help-request loss and callback-ladder gaps also remain. Audit scripts use throwaway keys, MOCK Retell and a fake microphone; **this audit measured no physical speaker-to-phone delivery**. No application code was changed on the audit branch.
+
 **Sat ~5:00 PM (Dev 3): help flow verified on real devices; sw `chirp-v14`.**
 - **"I need help" end to end on the live site:** phone (Pages receiver) → POST through the tunnel → console help queue (supervisor token) → **closed by a named person** ("Stuti"). Also checked in **airplane mode**: the phone shows NOT DELIVERED, then sends on its own when the connection returns.
 - Retell transfer's "Talk while waiting" switched to **Prompt** mode, so Spanish calls stay in Spanish.
