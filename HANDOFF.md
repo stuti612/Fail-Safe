@@ -6,7 +6,9 @@ How it works: read this before every task and after every commit. Lock a file be
 
 | File | Owner | Since |
 |---|---|---|
-| (none) | — | — |
+| `docs/testing/A-protocol.md`, `C-browser.md`, `D-test-review.md`, `REPORT.md` | Codex | Oct 17 audit handoff |
+| `scripts/audit-c-a11y.mjs` | Codex | Oct 17 audit harness timing |
+| `CONTEXT.md` | Codex | Oct 17 testing status update |
 
 ## Messages
 

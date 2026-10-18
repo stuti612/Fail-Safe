@@ -105,6 +105,7 @@ try {
     const focusInDialog = await con.evaluate(() => document.activeElement?.closest('dialog')?.id);
     C.ok(`${scheme} console review dialog takes focus`, focusInDialog === 'review', focusInDialog);
     await con.keyboard.press('Escape');
+    await con.waitForFunction(() => !document.getElementById('review').open && /Cancelled|Nothing sent/.test(document.getElementById('status').textContent), null, { timeout: 2000 }).catch(() => {});
     C.ok(`${scheme} Escape closes review without sending`, !(await con.isVisible('#review')) && /Cancelled|Nothing sent/.test(await con.textContent('#status')), await con.textContent('#status'));
     const rg = await ctx.newPage();
     await rg.goto(`${srv.origin}/range/`);
