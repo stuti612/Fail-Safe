@@ -101,6 +101,12 @@ Be honest on Devpost: the base code was written with Claude Code, and we should 
 
 ## 8. Status
 
+**Sat ~5:00 PM (Dev 3): help flow verified on real devices; sw `chirp-v14`.**
+- **"I need help" end to end on the live site:** phone (Pages receiver) → POST through the tunnel → console help queue (supervisor token) → **closed by a named person** ("Stuti"). Also checked in **airplane mode**: the phone shows NOT DELIVERED, then sends on its own when the connection returns.
+- Retell transfer's "Talk while waiting" switched to **Prompt** mode, so Spanish calls stay in Spanish.
+- `sw.js` bumped to `chirp-v14` (Armenian phrasebook + HELP_ENDPOINT config). Phones: reload once online.
+- Remaining: native-speaker reviews, Twist 2 real-phone clip, Retell screen recording, phone number (needs a card). Before the demo, clear test entries from `server/queue.json`.
+
 **Sat ~4:15 PM (Dev 3): help line live in Retell.** Branch `dev3`.
 - **Help server** runs on Dev 3's laptop with the Retell API key (**signatures enforced**), behind a cloudflared quick tunnel (`https://exception-tons-operating-scout.trycloudflare.com`). Run in two terminals: `caffeinate -i node --env-file=server/.env server/server.mjs` and `cloudflared tunnel --no-autoupdate --url http://localhost:8787`. Not localtunnel or ngrok (their browser warning page breaks the phone's POST /help). **The tunnel URL changes on every cloudflared restart**: then update the Retell functions and webhook and `shared/config.js`. Secrets are in `server/.env` (gitignored).
 - **Retell agent "CHIRP Help Line"**: single prompt from `retell/agent_prompt.md`, English (US) + Spanish (Latin America), custom functions `get_active_alerts` / `report_need`, Call Transfer (cold) to a teammate's phone, agent webhook. **Browser test calls in English and Spanish work**: the agent looks up alerts and records the need, and it lands in the help queue signed by Retell (`source: phone`, lang `es`). Transfer can't run in browser calls (Retell limit). **No phone number yet** (needs a card); then RETELL_PHONE / RETELL_FROM_NUMBER, a real call and a real transfer.
