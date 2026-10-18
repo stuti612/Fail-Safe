@@ -4,13 +4,42 @@
 
 **Date:** October 17, 2026 (Pacific)
 
-**Scope:** protocol and codecs (A), help server and Retell interface (B), Chromium end-to-end (C), and a review of test evidence (D). This audit changes tests and reports only; the findings describe the application as tested.
+**Scope:** protocol and codecs (A), help server and Retell interface (B), Chromium end-to-end (C), and a review of test evidence (D). This PR contains only the five reports in `docs/testing/`; the findings describe the unchanged application at `0bcda8d`.
 
 ## Method and environment
 
 The audit ran the eleven executable `scripts/audit-*.mjs` suites. `audit-a-gate-shim.mjs` is a helper invoked by `audit-a-protocol.mjs`; `audit-c-lib.mjs` is a library, not a standalone test. Track A uses Node, seeded fuzz cases, synthetic signing keys and the vendored ggwave codec. Track B sends real HTTP and raw TCP traffic to the local server, uses mock Retell credentials, then restores the server queue. Track C runs the real pages in Chromium and feeds generated WAVs to Chromium's fake microphone. [Track D](D-test-review.md) reviews what passing checks do and do not prove.
 
 The host is macOS Darwin 25.0.0 on Apple M2, Node v26.7.0, with Playwright Chromium. Servers bound only to `127.0.0.1` on ports 8901–8981. No real keys, real Retell calls, public tunnel traffic, physical speaker or phone measurements were used. Browser routes substituted throwaway public keys and a local config; the help suite used a fake supervisor token. The initial sandboxed B/C run was invalid because `listen` returned `EPERM`; the reported B/C results come from a rerun with loopback permission. Generated WAVs and raw run logs remained in `/private/tmp/chirp-audit-run/`; they are not part of the PR.
+
+### Steps taken and reproduction
+
+1. Read `AGENTS.md`, `CLAUDE.md`, `CONTEXT.md`, `HANDOFF.md` and the testing handoff; checked the clean `testing/full-audit` worktree against `main` at `0bcda8d`. The handoff already contained the B harness and its initial report; A and C were unfinished.
+2. Ran both A entry points, the B server entry point and all eight C browser entry points. The commands below reproduce the final runs from the [audit harness snapshot at `65548d3`](https://github.com/stuti612/Fail-Safe/tree/65548d3/scripts). This report-only PR excludes those scripts and generated screenshots; the committed snapshot preserves their exact source, including the final a11y correction.
+3. Discarded the first B/C results because the sandbox refused local `listen` with `EPERM`. Reran with permission for loopback sockets, one suite at a time: the suites use fixed ports, and B and C-help both touch the local queue. Reran the full A protocol suite under the same permission so its embedded server gate was valid.
+4. Matched failed assertions to the implementation, reproduced the high-impact cases with concrete inputs, reviewed false-pass risks, and compared the synthetic audio matrices with the browser's fake-microphone results. Restored the pre-existing help queue after B; no production key, Retell account, public tunnel or application source was changed.
+5. Corrected one a11y harness timing race, reran that suite, and used its final result below. Wrote the A, C, D and consolidated reports; included the existing B report. The full findings remain open for a later implementation PR.
+
+```sh
+AUDIT_SEED=20261017 node scripts/audit-a-protocol.mjs
+node scripts/audit-a-audio.mjs
+node scripts/audit-b-server.mjs
+for suite in smoke receiver audio i18n offline a11y console help; do
+  node "scripts/audit-c-${suite}.mjs"
+done
+```
+
+Several audit commands exit nonzero because they intentionally assert currently failing behavior. The counts and minimal repros below, rather than process exit alone, are the outcome. `audit-a-gate-shim.mjs` and `audit-c-lib.mjs` are supporting files, not additional runnable suites.
+
+### Changes and fixes made during the audit
+
+| Item | Change, reason and verification | Included in this PR? |
+| --- | --- | --- |
+| Application fixes | **None.** The server crash, alert interpretation, help loss, spoof display and other product findings were documented, not repaired. Application files match audited base `0bcda8d`. | No application diff. |
+| A11y harness fix | The first run pressed Escape and immediately read the dialog status. The application handles the dialog's `close` event asynchronously, so one light-theme assertion falsely failed. In `scripts/audit-c-a11y.mjs:108`, I added a wait of at most 2 seconds for both `#review` to close and `#status` to say `Cancelled` or `Nothing sent`. The final assertion still fails if either condition does not occur. Rerun: **87 PASS / 25 FAIL → 88 PASS / 24 FAIL**; both light and dark Escape checks passed. The other 24 failures remained. | No; the fixed harness is preserved at `65548d3` for traceability. |
+| Documentation | Added A, C, D and this consolidated report; retained the detailed B findings from the handoff. This report now records test steps, evidence limits, bug repros and proposed fixes. | Yes: five report files. |
+
+The a11y correction only changed when the test observes an event; it did not change the dialog, receiver, console or any product behavior. The reports should therefore be read as a backlog of proposed fixes, not a claim that the product was repaired.
 
 ## Results
 
@@ -80,6 +109,19 @@ The detailed repro inputs and lower-severity ledger are in [A-protocol.md](A-pro
 ### Low and Info
 
 The track reports include each lower-priority reproduction. Notable limits: the cooldown grows after a backward clock adjustment (`console/slow.js:8-9`); a future client timestamp can defeat help-data retention (`server/core.mjs:122`); closing a help request twice overwrites the named handler (`server/core.mjs:114`); the receiver language picker measures 34 px high (`receiver/index.html:26`, `shared/style.css:93-99`); and the Armenian unverified badge displays its whole sentence because the UI splits on a colon (`receiver/app.js:162`). INFO observations include the committed public tunnel URL in `shared/config.js`, unreviewed translations, non-canonical base64 accepted by the decoder, and the finite 16-bit message-ID space.
+
+## Proposed repair order and acceptance checks
+
+These are **recommendations**, not changes made in this PR. Each check should run after its corresponding product change; physical and live-service checks require separate authorized test setups.
+
+| Order | Proposed fix | Evidence required before closing the finding |
+| --- | --- | --- |
+| 1 | Catch body-stream errors and handler rejections in `server/server.mjs` (B-C1). Keep aborted requests from ending the process. | Repeat the partial-body raw-TCP repro, including unauthenticated GET-with-body; server stays alive and a subsequent help request succeeds. |
+| 2 | Make CAP event and area mapping explicit (A-H1/H2): reviewed exact codes/phrases, no negation by substring, and operator choice on ambiguous geography. Keep signed alert validity consistent at console, server and receiver (A-H3, A-M5). | Preview `Evacuation Order Lifted`, `Malibu; Los Angeles County`, `Exposition Park` and ±1-minute clock cases. Confirm no misleading or silently widened broadcast. |
+| 3 | Make help acknowledgment durable (B-H1/M9, A-H4/B-M5): retain by server receipt time, reject impossible client times, use a wider POST ID or compare content on duplicate IDs. | An old offline request is either retained after a 200 response or explicitly rejected; two distinct same-minute requests remain separate across restart. |
+| 4 | Persist callback transitions and resume unfinished ladders; count only caller speech; deduplicate callback webhooks and refuse concurrent ladders (B-H2/H3, B-M1/M2). | Restart after call 2 and observe escalation; agent-only speech does not mark `answered`; duplicate deliveries advance at most once. |
+| 5 | Preserve a verified alert as the primary receiver card, bound unverified history separately (C-H1); investigate the 44.1 kHz codec path on an actual device (A-H5). | An unsigned ALL CLEAR cannot replace a live verified evacuation; device trials include raw 44.1 kHz numerator/denominator and samples. |
+| 6 | Correct the remaining browser and data-handling findings: active alarm stop, translations, layout, accessibility, byte-safe webhook decoding, coordinate validation and supervisor number display. | Rerun the relevant C and B suites, then check physical phone, screen reader and real webhook behavior separately. |
 
 ## Readiness and limits
 

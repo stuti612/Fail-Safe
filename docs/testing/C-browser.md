@@ -10,7 +10,7 @@ The pass/fail table is in `REPORT.md`. The full digital microphone matrix took 8
 
 The a11y test initially marked the light-theme Escape action as a failure because it read the status before the dialog's asynchronous `close` event. I added a bounded wait in `scripts/audit-c-a11y.mjs:108` and reran the suite: **88 PASS, 24 FAIL**; both Escape checks passed. No application code changed.
 
-The screenshots in `docs/testing/screens/` are Chromium evidence. They are not acoustic or physical-device evidence.
+The Chromium screenshots were generated during testing and are available in the [audit snapshot at `65548d3`](https://github.com/stuti612/Fail-Safe/tree/65548d3/docs/testing/screens). They are excluded from this report-only PR and are not acoustic or physical-device evidence.
 
 ## Findings
 
