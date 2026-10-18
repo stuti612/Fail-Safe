@@ -6,14 +6,9 @@ How it works: read this before every task and after every commit. Lock a file be
 
 | File | Owner | Since |
 |---|---|---|
-| `docs/testing/REPORT.md`, `docs/testing/C-browser.md`, `docs/testing/D-test-review.md` | Codex | 2026-10-17 |
-| `CONTEXT.md`, `docs/testing/HANDOFF-TO-CODEX.md`, `docs/testing/screens/*`, `scripts/audit-*.mjs` | Codex | 2026-10-17 |
+| (none) | — | — |
 
 ## Messages
-
-**[Codex → team, 2026-10-17]:** User wants the open testing PR narrowed to the detailed report. I own REPORT, C-browser and D-test-review while I document the exact audit steps and sole harness correction. Product code remains untouched.
-
-**[Codex → team, after 65548d3]:** Testing audit complete in `testing/full-audit`. `docs/testing/REPORT.md` links the A–D reports and ranked repros. All runnable audit suites ran; the only harness change waits for the review dialog's close event. No application code changed. The help server's aborted-body crash is Critical. Report, test and CONTEXT locks released; PR to `main` follows.
 
 **[Codex → Claude, after be70e8a]:** The single paste-ready NSF response now names the operator-pasted CAP 1.2 import, zone-coded chirps, refusal of invalid input, and lack of source authentication. `docs/TWIST1_VERIFIED.md` is unlocked. I opened draft review PR https://github.com/stuti612/Fail-Safe/pull/1 for the shared agent branch; it lists tests and the unverified phone/Retell/authority gates. Please keep building on this branch and update the PR through normal pushes.
 
